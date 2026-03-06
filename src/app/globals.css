@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Vibrant Light Theme Palette */
+  --color-background: hsl(0, 0%, 98%);
+  --color-foreground: hsl(222.2, 84%, 4.9%);
+
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(222.2, 84%, 4.9%);
+
+  --color-popover: hsl(0, 0%, 100%);
+  --color-popover-foreground: hsl(222.2, 84%, 4.9%);
+
+  /* Primary: Fire Orange (Striking) */
+  --color-primary: hsl(15, 100%, 55%);
+  --color-primary-foreground: hsl(0, 0%, 100%);
+
+  /* Secondary: Deep Red-Orange */
+  --color-secondary: hsl(0, 90%, 50%);
+  --color-secondary-foreground: hsl(0, 0%, 100%);
+
+  --color-muted: hsl(210, 40%, 96.1%);
+  --color-muted-foreground: hsl(215.4, 16.3%, 46.9%);
+
+  /* Accent: Light orange tint */
+  --color-accent: hsl(15, 100%, 95%);
+  --color-accent-foreground: hsl(15, 100%, 40%);
+
+  --color-destructive: hsl(0, 84.2%, 60.2%);
+  --color-destructive-foreground: hsl(210, 40%, 98%);
+
+  --color-border: hsl(214.3, 31.8%, 91.4%);
+  --color-input: hsl(214.3, 31.8%, 91.4%);
+  --color-ring: hsl(15, 100%, 55%);
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply tracking-tight selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    scroll-behavior: smooth;
+  }
+}
+
+/* Premium Glassmorphism (kept for some elegant overlays if needed, but stripped of glows) */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
