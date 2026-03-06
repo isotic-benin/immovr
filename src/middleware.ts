@@ -2,7 +2,7 @@ import { withAuth } from "next-auth/middleware";
 
 export default withAuth(
     function middleware(req) {
-        // Ce middleware s'exécute après que withAuth a vérifié le token
+        // Middleware can be empty
     },
     {
         pages: {
@@ -13,7 +13,12 @@ export default withAuth(
 
 export const config = {
     matcher: [
-        "/admin/:path*",
+        "/admin",
+        "/admin/properties/:path*",
+        "/admin/reservations/:path*",
+        "/admin/notifications/:path*",
+        "/admin/invoices/:path*",
+        "/admin/search/:path*",
         "/api/admin/:path*",
     ],
 };
