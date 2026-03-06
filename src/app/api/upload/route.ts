@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
+import { put } from "@vercel/blob";
 import path from "path";
 import { randomUUID } from "crypto";
 
@@ -13,20 +13,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Aucun fichier envoyé" }, { status: 400 });
         }
 
-        const uploadDir = path.join(process.cwd(), "public", "images", folder);
-        await mkdir(uploadDir, { recursive: true });
-
         const urls: string[] = [];
 
         for (const file of files) {
-            const bytes = await file.arrayBuffer();
-            const buffer = Buffer.from(bytes);
             const ext = path.extname(file.name) || ".jpg";
-            const filename = `${randomUUID()}${ext}`;
-            const filepath = path.join(uploadDir, filename);
+            const filename = `immovr/${folder}/${randomUUID()}${ext}`;
 
-            await writeFile(filepath, buffer);
-            urls.push(`/images/${folder}/${filename}`);
+            // Upload to Vercel Blob
+            const blob = await put(filename, file, {
+                access: 'public',
+                addRandomSuffix: false,
+            });
+
+            urls.push(blob.url);
         }
 
         return NextResponse.json({ urls });
