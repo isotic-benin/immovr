@@ -133,7 +133,7 @@ export default function AdminProperties() {
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const blob = await upload(file.name, file, {
+                const blob = await upload(`immovr/biens/${Date.now()}-${file.name}`, file, {
                     access: 'public',
                     handleUploadUrl: '/api/upload/blob',
                 });
@@ -163,7 +163,7 @@ export default function AdminProperties() {
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const blob = await upload(file.name, file, {
+                const blob = await upload(`immovr/biens_standards/${Date.now()}-${file.name}`, file, {
                     access: 'public',
                     handleUploadUrl: '/api/upload/blob',
                 });
