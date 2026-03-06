@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { upload } from '@vercel/blob/client';
 import {
     Dialog,
     DialogContent,
@@ -51,24 +52,17 @@ export default function HeroCarouselModal({ open, onClose }: { open: boolean, on
         }
 
         setUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
 
         try {
-            const res = await fetch("/api/admin/upload/carousel", {
-                method: "POST",
-                body: formData,
+            const newBlob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/blob',
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                setImages([...images, data.url]);
-                toast.success("Image téléchargée !");
-            } else {
-                const errorData = await res.json();
-                toast.error(errorData.error || "Erreur lors de l'upload");
-            }
+            setImages([...images, newBlob.url]);
+            toast.success("Image téléchargée !");
         } catch (error) {
+            console.error("Upload error:", error);
             toast.error("Erreur technique lors de l'upload");
         } finally {
             setUploading(false);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { upload } from '@vercel/blob/client';
 import useSWR from "swr";
 import { Plus, Edit, Trash2, Power, PowerOff, Image as ImageIcon, Upload, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -127,23 +128,25 @@ export default function AdminProperties() {
         if (!files || files.length === 0) return;
 
         setUploading(true);
-        const fd = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            fd.append("files", files[i]);
-        }
-        fd.append("folder", "biens");
+        const newUrls: string[] = [];
 
         try {
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
-            const data = await res.json();
-            if (res.ok && data.urls) {
-                setUploadedImages(prev => [...prev, ...data.urls]);
-                toast.success(`${data.urls.length} image(s) 360 uploadée(s)`);
-            } else {
-                toast.error("Erreur lors de l'upload");
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const blob = await upload(file.name, file, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload/blob',
+                });
+                newUrls.push(blob.url);
             }
-        } catch {
-            toast.error("Erreur technique");
+
+            if (newUrls.length > 0) {
+                setUploadedImages(prev => [...prev, ...newUrls]);
+                toast.success(`${newUrls.length} image(s) 360 uploadée(s)`);
+            }
+        } catch (error) {
+            console.error("360 upload error:", error);
+            toast.error("Erreur technique lors de l'upload des images 360°");
         } finally {
             setUploading(false);
             e.target.value = "";
@@ -155,23 +158,25 @@ export default function AdminProperties() {
         if (!files || files.length === 0) return;
 
         setUploadingRegular(true);
-        const fd = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            fd.append("files", files[i]);
-        }
-        fd.append("folder", "biens_standards");
+        const newUrls: string[] = [];
 
         try {
-            const res = await fetch("/api/upload", { method: "POST", body: fd });
-            const data = await res.json();
-            if (res.ok && data.urls) {
-                setUploadedRegularImages(prev => [...prev, ...data.urls]);
-                toast.success(`${data.urls.length} photo(s) standard uploadée(s)`);
-            } else {
-                toast.error("Erreur lors de l'upload");
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const blob = await upload(file.name, file, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload/blob',
+                });
+                newUrls.push(blob.url);
             }
-        } catch {
-            toast.error("Erreur technique");
+
+            if (newUrls.length > 0) {
+                setUploadedRegularImages(prev => [...prev, ...newUrls]);
+                toast.success(`${newUrls.length} photo(s) standard uploadée(s)`);
+            }
+        } catch (error) {
+            console.error("Regular upload error:", error);
+            toast.error("Erreur technique lors de l'upload des photos standards");
         } finally {
             setUploadingRegular(false);
             e.target.value = "";

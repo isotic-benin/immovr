@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { upload } from '@vercel/blob/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,25 +64,19 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         if (!file) return;
 
         setUploading(true);
-        const formData = new FormData();
-        formData.append("files", file);
-        formData.append("folder", "logo");
 
         try {
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
+            const newBlob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/blob',
             });
-            const data = await res.json();
-            if (res.ok && data.urls?.[0]) {
-                setForm(prev => ({ ...prev, logoUrl: data.urls[0] }));
-                setLogoPreview(data.urls[0]);
-                toast.success("Logo uploadé avec succès");
-            } else {
-                toast.error("Erreur lors de l'upload du logo");
-            }
-        } catch {
-            toast.error("Erreur technique");
+
+            setForm(prev => ({ ...prev, logoUrl: newBlob.url }));
+            setLogoPreview(newBlob.url);
+            toast.success("Logo uploadé avec succès");
+        } catch (error) {
+            console.error("Logo upload error:", error);
+            toast.error("Erreur technique lors de l'upload");
         } finally {
             setUploading(false);
         }
