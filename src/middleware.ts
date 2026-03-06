@@ -3,26 +3,12 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
     function middleware(req) {
-        const { pathname } = req.nextUrl;
-
-        // Autoriser l'accès public en GET à l'API settings (pour le carrousel)
-        if (pathname === "/api/admin/settings" && req.method === "GET") {
-            return NextResponse.next();
-        }
+        // Le middleware s'exécute pour les routes qui matchent le config.matcher
+        return NextResponse.next();
     },
     {
         callbacks: {
-            authorized: ({ token, req }) => {
-                const { pathname } = req.nextUrl;
-
-                // Routes publiques ou APIs spécifiques à autoriser sans token
-                if (pathname === "/api/admin/settings" && req.method === "GET") {
-                    return true;
-                }
-
-                // Par défaut, nécessite un token pour tout ce qui match le config.matcher
-                return !!token;
-            },
+            authorized: ({ token }) => !!token,
         },
         pages: {
             signIn: "/admin/login",
@@ -30,9 +16,15 @@ export default withAuth(
     }
 );
 
+// On exclut explicitement /admin/login de la protection du middleware
 export const config = {
     matcher: [
-        "/admin/:path*",
+        "/admin",
+        "/admin/properties/:path*",
+        "/admin/reservations/:path*",
+        "/admin/notifications/:path*",
+        "/admin/invoices/:path*",
+        "/admin/search/:path*",
         "/api/admin/:path*",
     ],
 };

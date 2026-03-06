@@ -95,16 +95,16 @@ export default function Home() {
           )}
 
           {/* Premium Search Bar */}
-          <div className="bg-slate-800/80 backdrop-blur-xl w-full max-w-2xl p-3 rounded-full flex flex-col md:flex-row gap-2 items-center shadow-2xl border border-slate-700">
-            <div className="flex-grow flex items-center bg-slate-900/50 rounded-full px-5 border border-slate-700 w-full h-14 transition-colors focus-within:border-primary/50">
-              <MapPin className="text-primary mr-3" size={22} />
+          <div className="bg-slate-800/80 backdrop-blur-xl w-full max-w-2xl p-2 md:p-3 rounded-3xl md:rounded-full flex flex-col md:flex-row gap-3 items-center shadow-2xl border border-slate-700">
+            <div className="flex-grow flex items-center bg-slate-900/50 rounded-2xl md:rounded-full px-5 border border-slate-700 w-full h-14 transition-colors focus-within:border-primary/50">
+              <MapPin className="text-primary mr-3 shrink-0" size={22} />
               <Input
-                placeholder="Où cherchez-vous ? (ex: Cocody)"
-                className="border-none bg-transparent text-white placeholder:text-slate-400 focus-visible:ring-0 px-0 h-10 text-lg shadow-none"
+                placeholder="Où cherchez-vous ?"
+                className="border-none bg-transparent text-white placeholder:text-slate-400 focus-visible:ring-0 px-0 h-10 text-lg shadow-none w-full"
               />
             </div>
             <Link href="/recherche" className="w-full md:w-auto">
-              <Button size="lg" className="rounded-full h-14 px-8 text-lg font-bold w-full shrink-0 shadow-lg shadow-primary/20 bg-primary text-white hover:bg-primary/90 hover:scale-105 transition-all border-0">
+              <Button size="lg" className="rounded-2xl md:rounded-full h-14 px-8 text-lg font-bold w-full shrink-0 shadow-lg shadow-primary/20 bg-primary text-white hover:bg-primary/90 transition-all border-0">
                 <Search className="mr-2" size={20} /> Rechercher
               </Button>
             </Link>
