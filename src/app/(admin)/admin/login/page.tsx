@@ -20,17 +20,34 @@ export default function AdminLogin() {
         setLoading(true);
         setError("");
 
-        const res = await signIn("credentials", {
-            redirect: false,
-            email,
-            password,
-        });
+        try {
+            // Créer une promesse avec timeout
+            const signInPromise = signIn("credentials", {
+                redirect: false,
+                email,
+                password,
+            });
 
-        if (res?.error) {
-            setError(res.error);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("TIMEOUT")), 15000)
+            );
+
+            // Attendre le premier des deux
+            const res: any = await Promise.race([signInPromise, timeoutPromise]);
+
+            if (res?.error) {
+                setError(res.error === "CredentialsSignin" ? "Identifiants incorrects." : res.error);
+                setLoading(false);
+            } else {
+                router.push("/admin");
+            }
+        } catch (err: any) {
             setLoading(false);
-        } else {
-            router.push("/admin");
+            if (err.message === "TIMEOUT") {
+                setError("La connexion prend trop de temps. Vérifiez votre connexion internet ou réessayez. La base de données est peut-être en cours de démarrage.");
+            } else {
+                setError("Une erreur technique est survenue. Veuillez réessayer.");
+            }
         }
     };
 
