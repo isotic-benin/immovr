@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Save, Upload, X } from "lucide-react";
+import { compressImage } from "@/lib/image-utils";
 
 interface SettingsModalProps {
     open: boolean;
@@ -66,7 +67,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         setUploading(true);
 
         try {
-            const newBlob = await upload(file.name, file, {
+            // Compresser l'image avant l'upload (max 800px pour un logo)
+            const compressedFile = await compressImage(file, 800, 0.82);
+            
+            const newBlob = await upload(compressedFile.name, compressedFile, {
                 access: 'public',
                 handleUploadUrl: '/api/upload/blob',
             });

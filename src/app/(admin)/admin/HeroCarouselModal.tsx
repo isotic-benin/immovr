@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Image as ImageIcon, X } from "lucide-react";
+import { compressImage } from "@/lib/image-utils";
 
 export default function HeroCarouselModal({ open, onClose }: { open: boolean, onClose: () => void }) {
     const [images, setImages] = useState<string[]>([]);
@@ -54,7 +55,10 @@ export default function HeroCarouselModal({ open, onClose }: { open: boolean, on
         setUploading(true);
 
         try {
-            const newBlob = await upload(file.name, file, {
+            // Compresser l'image pour un meilleur chargement (max 1920px pour le carousel)
+            const compressedFile = await compressImage(file, 1920, 0.85);
+
+            const newBlob = await upload(compressedFile.name, compressedFile, {
                 access: 'public',
                 handleUploadUrl: '/api/upload/blob',
             });
