@@ -1,4 +1,5 @@
 "use client";
+import { compressImage } from "@/lib/image-utils";
 
 import { useState, useEffect } from "react";
 import { upload } from '@vercel/blob/client';
@@ -132,7 +133,11 @@ export default function AdminProperties() {
 
         try {
             for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+                let file = files[i];
+                // Compress 360° image (can be larger, so using higher maxWidth)
+                if (file.type.startsWith('image/')) {
+                    file = await compressImage(file, 4096, 0.85);
+                }
                 const blob = await upload(`immovr/biens/${Date.now()}-${file.name}`, file, {
                     access: 'public',
                     handleUploadUrl: '/api/upload/blob',
@@ -162,7 +167,11 @@ export default function AdminProperties() {
 
         try {
             for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+                let file = files[i];
+                // Compress standard image
+                if (file.type.startsWith('image/')) {
+                    file = await compressImage(file, 2048, 0.8);
+                }
                 const blob = await upload(`immovr/biens_standards/${Date.now()}-${file.name}`, file, {
                     access: 'public',
                     handleUploadUrl: '/api/upload/blob',
@@ -561,8 +570,8 @@ export default function AdminProperties() {
                                         <TableRow key={property._id}>
                                             <TableCell>
                                                 <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
-                                                    {property.panoramaImageUrls?.[0] ? (
-                                                        <img src={property.panoramaImageUrls[0]} alt="" className="w-full h-full object-cover" />
+                                                    {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
+                                                        <img src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <ImageIcon size={20} className="text-slate-400" />
                                                     )}
@@ -579,7 +588,10 @@ export default function AdminProperties() {
                                                 <span className="text-sm font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md">{property.category && property.category !== "Non classé" ? property.category : "Non classé"}</span>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="text-sm text-slate-500">{property.panoramaImageUrls?.length || 0} 📷</span>
+                                                <div className="flex flex-col text-xs text-slate-500">
+                                                    <span title="Images 360°">{property.panoramaImageUrls?.length || 0} 🌐</span>
+                                                    <span title="Photos standards">{property.regularImageUrls?.length || 0} 📷</span>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${property.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
