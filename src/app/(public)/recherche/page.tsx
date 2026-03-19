@@ -182,9 +182,9 @@ function SearchPropertiesContent() {
 
                                     <div className="relative h-56 overflow-hidden bg-slate-100 z-10 m-2 rounded-2xl">
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 opacity-60"></div>
-                                        {property.panoramaImageUrls?.[0] ? (
+                                        {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
                                             <img
-                                                src={property.panoramaImageUrls[0]}
+                                                src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
                                                 alt={property.title}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                                             />
@@ -193,11 +193,13 @@ function SearchPropertiesContent() {
                                                 <ImageIcon size={48} />
                                             </div>
                                         )}
-                                        <div className="absolute top-3 left-3 z-20">
-                                            <div className="glass px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-md">
-                                                <Eye size={14} className="text-primary" /> VR 360°
+                                        {property.panoramaImageUrls?.[0] && (
+                                            <div className="absolute top-3 left-3 z-20">
+                                                <div className="glass px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-md">
+                                                    <Eye size={14} className="text-primary" /> VR 360°
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                         {isFilteredByAvailability && (
                                             <div className="absolute top-3 right-3 z-20">
                                                 <div className="bg-green-500 text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider shadow-md">

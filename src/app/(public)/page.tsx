@@ -176,9 +176,9 @@ export default function Home() {
                   <div className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-2 border-transparent hover:border-primary/20 flex flex-col h-full hover:-translate-y-2 relative">
                     <div className="relative h-64 overflow-hidden bg-slate-100 z-10 m-2 rounded-2xl">
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 opacity-60"></div>
-                      {property.panoramaImageUrls?.[0] ? (
+                      {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
                         <img
-                          src={property.panoramaImageUrls[0]}
+                          src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
                           alt={property.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         />
@@ -187,11 +187,13 @@ export default function Home() {
                           <ImageIcon size={48} />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4 z-20">
-                        <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-slate-900 flex items-center gap-1.5 shadow-md">
-                          <Eye size={14} className="text-primary" /> Visite 360° Dispo
+                      {property.panoramaImageUrls?.[0] && (
+                        <div className="absolute top-4 left-4 z-20">
+                          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-slate-900 flex items-center gap-1.5 shadow-md">
+                            <Eye size={14} className="text-primary" /> Visite 360° Dispo
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="absolute bottom-4 right-4 z-20">
                         <div className="bg-primary text-white px-4 py-2 rounded-xl font-black shadow-lg shadow-primary/30">
                           {property.price || property.pricePerHour}{devise} <span className="text-white/80 font-medium text-sm">/ {property.pricingPeriod || 'heure'}</span>

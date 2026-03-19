@@ -314,8 +314,8 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                                         <Link href={`/appartement/${prop._id}`} key={prop._id} className="block group">
                                             <div className="flex gap-3 p-3 rounded-xl border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all bg-white">
                                                 <div className="w-24 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0">
-                                                    {(prop.regularImageUrls?.[0] || prop.panoramaImageUrls?.[0]) ? (
-                                                        <img src={prop.regularImageUrls?.[0] || prop.panoramaImageUrls?.[0]} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                    {(prop.panoramaImageUrls?.[0] || prop.regularImageUrls?.[0]) ? (
+                                                        <img src={prop.panoramaImageUrls?.[0] || prop.regularImageUrls?.[0]} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon size={20} /></div>
                                                     )}
