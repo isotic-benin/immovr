@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface INotification extends Document {
-    type: "review" | "reservation" | "contact";
+    type: "review" | "reservation" | "contact" | "lease_expiry";
     title: string;
     message: string;
     relatedId?: string;
@@ -10,7 +10,7 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
     {
-        type: { type: String, enum: ["review", "reservation", "contact"], required: true },
+        type: { type: String, enum: ["review", "reservation", "contact", "lease_expiry"], required: true },
         title: { type: String, required: true },
         message: { type: String, required: true },
         relatedId: { type: String },

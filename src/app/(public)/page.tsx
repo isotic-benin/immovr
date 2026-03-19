@@ -2,15 +2,27 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Eye, Image as ImageIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, MapPin, Eye, Image as ImageIcon, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { fr } from "date-fns/locale";
 
 export default function Home() {
+  const router = useRouter();
   const [properties, setProperties] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Search State
+  const [location, setLocation] = useState("");
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   useEffect(() => {
     fetch("/api/properties?limit=6")
@@ -23,13 +35,8 @@ export default function Home() {
 
     fetch(`/api/admin/settings?t=${Date.now()}`)
       .then(res => res.json())
-      .then(data => {
-        console.log("DEBUG: Settings loaded on Home:", data);
-        console.log("DEBUG: heroCarouselImages property exists:", !!data.heroCarouselImages);
-        console.log("DEBUG: heroCarouselImages content:", data.heroCarouselImages);
-        setSettings(data);
-      })
-      .catch((err) => console.error("DEBUG: Settings fetch error:", err));
+      .then(data => setSettings(data))
+      .catch(() => {});
   }, []);
 
   // Carousel timer
@@ -42,6 +49,15 @@ export default function Home() {
     }
   }, [settings?.heroCarouselImages]);
 
+  const handleSearch = () => {
+      const params = new URLSearchParams();
+      if (location) params.append("location", location);
+      if (startDate) params.append("start", startDate.toISOString());
+      if (endDate) params.append("end", endDate.toISOString());
+      
+      router.push(`/recherche?${params.toString()}`);
+  };
+
   const agencyName = settings?.raisonSociale || "ImmoVR";
   const devise = settings?.devise || "FCFA";
   const carouselImages = settings?.heroCarouselImages || [];
@@ -51,7 +67,6 @@ export default function Home() {
 
       {/* Hero Section with Carousel */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden bg-slate-900 border-b-4 border-primary">
-        {/* Carousel Background Images */}
         <div className="absolute inset-0 z-0">
           {carouselImages.length > 0 ? (
             carouselImages.map((img: string, idx: number) => (
@@ -77,10 +92,9 @@ export default function Home() {
             L&apos;immobilier comme si vous y étiez, en <span className="text-primary tracking-tighter">Réalité Virtuelle</span>.
           </h1>
           <p className="animate-fade-in delay-200 text-lg md:text-2xl text-slate-300 mb-12 font-light max-w-2xl">
-            Visitez, réservez et séjournez dans les meilleurs appartements grâce à la visite 360° — propulsé par <span className="font-semibold text-white">{agencyName}</span>.
+            Visitez et découvrez les meilleurs appartements grâce à la visite 360° — propulsé par <span className="font-semibold text-white">{agencyName}</span>.
           </p>
 
-          {/* Carousel Indicators (if more than 1 image) */}
           {carouselImages.length > 1 && (
             <div className="flex gap-2 mb-8 animate-fade-in delay-300">
               {carouselImages.map((_: any, idx: number) => (
@@ -94,20 +108,49 @@ export default function Home() {
             </div>
           )}
 
-          {/* Premium Search Bar */}
-          <div className="bg-slate-800/80 backdrop-blur-xl w-full max-w-2xl p-3 rounded-full flex flex-col md:flex-row gap-2 items-center shadow-2xl border border-slate-700">
-            <div className="flex-grow flex items-center bg-slate-900/50 rounded-full px-5 border border-slate-700 w-full h-14 transition-colors focus-within:border-primary/50">
-              <MapPin className="text-primary mr-3" size={22} />
+          {/* Premium Search Bar with Dates */}
+          <div className="bg-slate-800/90 backdrop-blur-xl w-full max-w-4xl p-3 md:p-4 rounded-[2rem] flex flex-col md:flex-row gap-3 shadow-2xl border border-slate-600/50">
+            <div className="flex-1 flex items-center bg-slate-900/50 rounded-2xl px-4 border border-slate-600/50 h-14 hover:border-primary/50 transition-colors">
+              <MapPin className="text-primary mr-3 shrink-0" size={20} />
               <Input
-                placeholder="Où cherchez-vous ? (ex: Cocody)"
-                className="border-none bg-transparent text-white placeholder:text-slate-400 focus-visible:ring-0 px-0 h-10 text-lg shadow-none"
+                placeholder="Où cherchez-vous ?"
+                className="border-none bg-transparent text-white placeholder:text-slate-400 focus-visible:ring-0 px-0 shadow-none text-base"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
-            <Link href="/recherche" className="w-full md:w-auto">
-              <Button size="lg" className="rounded-full h-14 px-8 text-lg font-bold w-full shrink-0 shadow-lg shadow-primary/20 bg-primary text-white hover:bg-primary/90 hover:scale-105 transition-all border-0">
-                <Search className="mr-2" size={20} /> Rechercher
-              </Button>
-            </Link>
+            
+            <div className="flex-1 flex items-center bg-slate-900/50 rounded-2xl border border-slate-600/50 h-14 hover:border-primary/50 transition-colors overflow-hidden">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" className={cn("w-full h-full justify-start text-left font-normal text-white hover:bg-transparent hover:text-white px-4 rounded-none", !startDate && "text-slate-400")}>
+                            <CalendarIcon size={20} className="mr-3 text-primary shrink-0"/>
+                            {startDate ? format(startDate, "dd MMM yyyy", { locale: fr }) : "Début du séjour"}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={startDate} onSelect={(d) => { setStartDate(d); if (endDate && d && endDate <= d) setEndDate(undefined); }} disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} initialFocus locale={fr}/>
+                    </PopoverContent>
+                </Popover>
+            </div>
+            
+            <div className="flex-1 flex items-center bg-slate-900/50 rounded-2xl border border-slate-600/50 h-14 hover:border-primary/50 transition-colors overflow-hidden">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" className={cn("w-full h-full justify-start text-left font-normal text-white hover:bg-transparent hover:text-white px-4 rounded-none", !endDate && "text-slate-400")}>
+                            <CalendarIcon size={20} className="mr-3 text-secondary shrink-0"/>
+                            {endDate ? format(endDate, "dd MMM yyyy", { locale: fr }) : "Fin du séjour"}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={endDate} onSelect={setEndDate} disabled={(date) => !startDate || date <= startDate} initialFocus locale={fr}/>
+                    </PopoverContent>
+                </Popover>
+            </div>
+
+            <Button onClick={handleSearch} size="lg" className="rounded-2xl h-14 px-8 text-lg font-bold shrink-0 shadow-lg shadow-primary/20 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 transition-all border-0 md:w-auto w-full">
+              <Search className="mr-2" size={20} /> Rechercher
+            </Button>
           </div>
         </div>
       </section>
@@ -118,7 +161,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">À découvrir en VR 360°</h2>
             <p className="text-slate-500 max-w-2xl mx-auto text-lg">
-              Explorez nos appartements les plus populaires. Cliquez sur un bien pour démarrer la visite virtuelle et réserver instantanément.
+              Explorez nos appartements les plus populaires. Cliquez sur un bien pour démarrer la visite virtuelle.
             </p>
           </div>
 
@@ -130,11 +173,9 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {properties.map((property: any) => (
                 <Link href={`/appartement/${property._id}`} key={property._id} className="group block h-full">
-                  <div className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-2 border-transparent hover:border-primary/20 flex flex-col h-full hover:-translate-y-2 relative group">
+                  <div className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-2 border-transparent hover:border-primary/20 flex flex-col h-full hover:-translate-y-2 relative">
                     <div className="relative h-64 overflow-hidden bg-slate-100 z-10 m-2 rounded-2xl">
-                      {/* Img Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 opacity-60"></div>
-
                       {property.panoramaImageUrls?.[0] ? (
                         <img
                           src={property.panoramaImageUrls[0]}
@@ -146,14 +187,11 @@ export default function Home() {
                           <ImageIcon size={48} />
                         </div>
                       )}
-
-                      {/* Floating Badges */}
                       <div className="absolute top-4 left-4 z-20">
                         <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-slate-900 flex items-center gap-1.5 shadow-md">
                           <Eye size={14} className="text-primary" /> Visite 360° Dispo
                         </div>
                       </div>
-
                       <div className="absolute bottom-4 right-4 z-20">
                         <div className="bg-primary text-white px-4 py-2 rounded-xl font-black shadow-lg shadow-primary/30">
                           {property.price || property.pricePerHour}{devise} <span className="text-white/80 font-medium text-sm">/ {property.pricingPeriod || 'heure'}</span>
@@ -168,9 +206,8 @@ export default function Home() {
                       </div>
                       <h3 className="text-2xl font-bold text-slate-800 mb-2 line-clamp-2 leading-tight group-hover:text-primary transition-colors">{property.title}</h3>
 
-                      <div className="mt-auto pt-6 flex gap-3 w-full">
-                        <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-semibold h-12">Détails</Button>
-                        <Button className="w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-semibold h-12">Réserver</Button>
+                      <div className="mt-auto pt-6 w-full">
+                        <Button className="w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-bold h-12 shadow-md">Voir les détails</Button>
                       </div>
                     </div>
                   </div>
@@ -181,7 +218,7 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <Link href="/recherche">
-              <Button variant="outline" size="lg" className="rounded-full shadow-sm hover:shadow-md transition-shadow">
+              <Button variant="outline" size="lg" className="rounded-full shadow-sm hover:shadow-md transition-shadow font-bold">
                 Voir tous les appartements
               </Button>
             </Link>
@@ -208,10 +245,10 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center group">
             <div className="w-24 h-24 bg-slate-800 rounded-3xl flex items-center justify-center text-primary mb-8 group-hover:bg-primary group-hover:text-white group-hover:scale-110 transition-all duration-300">
-              <MapPin size={44} strokeWidth={1.5} />
+              <CalendarIcon size={44} strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl font-bold mb-4">Réservation Instantanée</h3>
-            <p className="text-slate-400 leading-relaxed max-w-sm">Consultez les disponibilités en temps réel et réservez votre séjour en quelques clics via un paiement sécurisé.</p>
+            <h3 className="text-2xl font-bold mb-4">Disponibilité en Temps Réel</h3>
+            <p className="text-slate-400 leading-relaxed max-w-sm">Consultez instantanément si l'appartement de vos rêves est disponible pour vos dates de séjour.</p>
           </div>
         </div>
       </section>

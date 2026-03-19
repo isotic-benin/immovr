@@ -200,8 +200,8 @@ export default function AdminProperties() {
 
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (uploadedImages.length === 0) {
-            toast.error("Veuillez ajouter au moins une image 360°");
+        if (uploadedImages.length === 0 && uploadedRegularImages.length === 0) {
+            toast.error("Veuillez ajouter au moins une image (360° ou standard)");
             return;
         }
 
@@ -264,8 +264,8 @@ export default function AdminProperties() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentProperty) return;
-        if (uploadedImages.length === 0) {
-            toast.error("Veuillez ajouter au moins une image 360°");
+        if (uploadedImages.length === 0 && uploadedRegularImages.length === 0) {
+            toast.error("Veuillez ajouter au moins une image (360° ou standard)");
             return;
         }
 
@@ -467,7 +467,7 @@ export default function AdminProperties() {
 
                             {/* Image Upload Section */}
                             <div className="space-y-3 bg-slate-50 rounded-xl p-4">
-                                <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement</Label>
+                                <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement (Optionnel)</Label>
 
                                 {/* Preview Grid */}
                                 {uploadedImages.length > 0 && (
@@ -756,7 +756,7 @@ export default function AdminProperties() {
 
                         {/* Image Upload Section */}
                         <div className="space-y-3 bg-slate-50 rounded-xl p-4">
-                            <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement</Label>
+                            <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement (Optionnel)</Label>
 
                             {/* Preview Grid */}
                             {uploadedImages.length > 0 && (

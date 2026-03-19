@@ -1,69 +1,61 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
 import Property from "@/lib/models/Property";
-import Reservation from "@/lib/models/Reservation";
-import Invoice from "@/lib/models/Invoice";
+import Occupation from "@/lib/models/Occupation";
 
 export async function GET(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== "admin") {
+        return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
     try {
         await dbConnect();
+        
         const { searchParams } = new URL(req.url);
-        const q = searchParams.get("q") || "";
+        const query = searchParams.get("q");
 
-        if (!q.trim()) {
-            return NextResponse.json({ properties: [], reservations: [], invoices: [] });
+        if (!query || query.length < 2) {
+            return NextResponse.json({ properties: [], occupations: [] });
         }
 
-        const regex = new RegExp(q, "i");
+        const regex = new RegExp(query, "i");
 
         // 1. Search Properties
         const propertiesPromise = Property.find({
             $or: [
                 { title: regex },
                 { description: regex },
-                { category: regex },
                 { "location.commune": regex },
-                { "location.quartier": regex },
-                { features: regex },
+                { "location.quartier": regex }
             ]
         }).limit(10).lean();
 
-        // 2. Search Reservations
-        const reservationsPromise = Reservation.find({
+        // 2. Search Occupations
+        const occupationsPromise = Occupation.find({
             $or: [
-                { guestName: regex },
-                { guestEmail: regex },
-                { guestPhone: regex },
-                { "guestDetails.firstName": regex },
-                { "guestDetails.lastName": regex },
-                { "guestDetails.email": regex },
-                { "guestDetails.phone": regex },
+                { tenantName: regex },
+                { tenantEmail: regex },
+                { tenantPhone: regex },
+                { notes: regex }
             ]
-        }).populate("propertyId", "title").limit(10).lean();
+        }).populate("propertyId").limit(10).lean();
 
-        // 3. Search Invoices
-        const invoicesPromise = Invoice.find({
-            $or: [
-                { invoiceNumber: regex },
-                { guestName: regex },
-                { guestEmail: regex },
-            ]
-        }).populate("reservationId").limit(10).lean();
-
-        const [properties, reservations, invoices] = await Promise.all([
+        const [properties, occupations] = await Promise.all([
             propertiesPromise,
-            reservationsPromise,
-            invoicesPromise
+            occupationsPromise,
         ]);
 
         return NextResponse.json({
             properties,
-            reservations,
-            invoices
+            occupations,
         });
 
-    } catch (error: any) {
-        console.error("Erreur api/admin/search:", error);
-        return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    } catch (error) {
+        console.error("Search error:", error);
+        return NextResponse.json({ error: "Erreur lors de la recherche" }, { status: 500 });
     }
 }

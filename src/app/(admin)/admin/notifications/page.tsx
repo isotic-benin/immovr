@@ -44,6 +44,7 @@ export default function AdminNotifications() {
             case "review": return <MessageSquare size={20} className="text-yellow-500" />;
             case "reservation": return <CalendarDays size={20} className="text-green-500" />;
             case "contact": return <Mail size={20} className="text-blue-500" />;
+            case "lease_expiry": return <CalendarDays size={20} className="text-orange-500" />;
             default: return <Bell size={20} className="text-slate-500" />;
         }
     };
@@ -53,6 +54,7 @@ export default function AdminNotifications() {
             case "review": return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-600 uppercase">Avis</span>;
             case "reservation": return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase">Réservation</span>;
             case "contact": return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-600 uppercase">Contact</span>;
+            case "lease_expiry": return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-600 uppercase">Expiration</span>;
             default: return null;
         }
     };

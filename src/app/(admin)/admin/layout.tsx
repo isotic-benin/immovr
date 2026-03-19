@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SessionProvider } from "next-auth/react";
 import Link from "next/link";
-import { LayoutDashboard, Home, Building, CalendarDays, LogOut, X, Bell, FileText } from "lucide-react";
+import { LayoutDashboard, Home, Building, CalendarDays, LogOut, X, Bell } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
@@ -46,14 +46,8 @@ function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                     <Link href="/admin/properties" onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${pathname.includes("/admin/properties") ? "bg-primary text-white" : "hover:bg-slate-800 text-slate-300"}`}>
                         <Building size={20} /> Biens Immobiliers
                     </Link>
-                    <Link href="/admin/reservations" onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${pathname.includes("/admin/reservations") ? "bg-primary text-white" : "hover:bg-slate-800 text-slate-300"}`}>
-                        <CalendarDays size={20} /> Réservations
-                    </Link>
                     <Link href="/admin/notifications" onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${pathname.includes("/admin/notifications") ? "bg-primary text-white" : "hover:bg-slate-800 text-slate-300"}`}>
                         <Bell size={20} /> Notifications
-                    </Link>
-                    <Link href="/admin/invoices" onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${pathname.includes("/admin/invoices") ? "bg-primary text-white" : "hover:bg-slate-800 text-slate-300"}`}>
-                        <FileText size={20} /> Factures
                     </Link>
                 </nav>
 

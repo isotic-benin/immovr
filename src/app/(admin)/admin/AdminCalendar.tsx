@@ -1,40 +1,42 @@
-import React, { useMemo, useState } from "react";
+"use client";
+
+import React, { useState } from "react";
 import { format, isWithinInterval, startOfDay, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MapPin, User, Clock } from "lucide-react";
 
-interface Reservation {
+interface Occupation {
     _id: string;
     startDate: string;
     endDate: string;
     propertyId: { title: string };
-    guestDetails: { firstName: string; lastName: string };
+    tenantName: string;
 }
 
 interface AdminCalendarProps {
-    reservations: Reservation[];
+    occupations: Occupation[];
 }
 
 interface CalendarDayProps {
     props: any;
-    getReservationForDay: (day: Date) => Reservation | null | undefined;
+    getOccupationForDay: (day: Date) => Occupation | null | undefined;
 }
 
-function CalendarDay({ props, getReservationForDay }: CalendarDayProps) {
+function CalendarDay({ props, getOccupationForDay }: CalendarDayProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dayDate = props.day.date;
-    const reservation = getReservationForDay(dayDate);
-    const isBooked = !!reservation;
+    const occupation = getOccupationForDay(dayDate);
+    const isBooked = !!occupation;
 
     if (!isBooked) {
         return <CalendarDayButton {...props} />;
     }
 
     const today = startOfDay(new Date());
-    const checkIn = startOfDay(new Date(reservation.startDate));
-    const checkOut = startOfDay(new Date(reservation.endDate));
+    const checkIn = startOfDay(new Date(occupation.startDate));
+    const checkOut = startOfDay(new Date(occupation.endDate));
     const daysTotal = differenceInDays(checkOut, checkIn);
     const daysRemaining = differenceInDays(checkOut, today);
 
@@ -68,17 +70,17 @@ function CalendarDay({ props, getReservationForDay }: CalendarDayProps) {
             >
                 <div className="bg-primary p-4 text-white">
                     <h4 className="font-bold text-lg flex items-center gap-2">
-                        <MapPin size={18} /> {reservation.propertyId?.title || "Appartement"}
+                        <MapPin size={18} /> {occupation.propertyId?.title || "Appartement"}
                     </h4>
                     <div className="text-primary-foreground/80 text-sm mt-1">
-                        {format(new Date(reservation.startDate), "dd MMM")} - {format(new Date(reservation.endDate), "dd MMM yyyy", { locale: fr })}
+                        {format(new Date(occupation.startDate), "dd MMM")} - {format(new Date(occupation.endDate), "dd MMM yyyy", { locale: fr })}
                     </div>
                 </div>
                 <div className="p-4 bg-white space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-slate-700 font-medium">
                             <User size={16} className="text-slate-400" />
-                            {reservation.guestDetails?.firstName} {reservation.guestDetails?.lastName}
+                            {occupation.tenantName}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full font-bold ${statusColor}`}>
                             {statusText}
@@ -100,23 +102,22 @@ function CalendarDay({ props, getReservationForDay }: CalendarDayProps) {
     );
 }
 
-export default function AdminCalendar({ reservations }: AdminCalendarProps) {
+export default function AdminCalendar({ occupations }: AdminCalendarProps) {
     const [date, setDate] = useState<Date | undefined>(new Date());
 
-    // Process reservations to find booked dates
-    const bookedDates = useMemo(() => {
-        return reservations?.map(res => ({
-            from: new Date(res.startDate),
-            to: new Date(res.endDate)
+    const bookedDates = React.useMemo(() => {
+        return occupations?.map(occ => ({
+            from: new Date(occ.startDate),
+            to: new Date(occ.endDate)
         })) || [];
-    }, [reservations]);
+    }, [occupations]);
 
-    const getReservationForDay = (day: Date) => {
-        if (!reservations) return null;
-        return reservations.find(res => {
+    const getOccupationForDay = (day: Date) => {
+        if (!occupations) return null;
+        return occupations.find(occ => {
             return isWithinInterval(startOfDay(day), {
-                start: startOfDay(new Date(res.startDate)),
-                end: startOfDay(new Date(res.endDate))
+                start: startOfDay(new Date(occ.startDate)),
+                end: startOfDay(new Date(occ.endDate))
             });
         });
     };
@@ -150,7 +151,7 @@ export default function AdminCalendar({ reservations }: AdminCalendarProps) {
                 }}
                 components={{
                     DayButton: (props) => (
-                        <CalendarDay props={props} getReservationForDay={getReservationForDay} />
+                        <CalendarDay props={props} getOccupationForDay={getOccupationForDay} />
                     )
                 }}
             />

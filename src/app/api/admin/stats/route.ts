@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/dbConnect";
 import Property from "@/lib/models/Property";
-import Reservation from "@/lib/models/Reservation";
+import Occupation from "@/lib/models/Occupation";
 import CompanySettings from "@/lib/models/CompanySettings";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -15,29 +15,43 @@ export async function GET() {
     try {
         const totalProperties = await Property.countDocuments();
 
-        // Reservations stats
-        const allReservations = await Reservation.find();
-        const paidReservations = allReservations.filter(r => r.status === 'paid');
+        const now = new Date();
 
-        const totalReservationsCount = allReservations.length;
-        const totalRevenue = paidReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
+        // Active occupations (currently ongoing)
+        const activeOccupations = await Occupation.countDocuments({
+            startDate: { $lte: now },
+            endDate: { $gte: now },
+        });
 
-        // Unique clients
-        const uniqueClients = new Set(allReservations.map(r => r.guestDetails?.email || r.guestEmail));
-        const totalClients = uniqueClients.size;
+        // Total occupations
+        const totalOccupations = await Occupation.countDocuments();
 
-        // Recent reservations
-        const recentReservations = await Reservation.find()
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .populate("propertyId", "title");
+        // Vacant properties count
+        const occupiedPropertyIds = await Occupation.distinct("propertyId", {
+            startDate: { $lte: now },
+            endDate: { $gte: now },
+        });
+        const vacantProperties = totalProperties - occupiedPropertyIds.length;
 
-        // All active/upcoming reservations for calendar
-        const allActiveReservations = await Reservation.find({
-            status: 'paid'
+        // Upcoming expirations (next 7 days)
+        const sevenDaysLater = new Date(now);
+        sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+        const upcomingExpirations = await Occupation.countDocuments({
+            endDate: { $gte: now, $lte: sevenDaysLater },
+        });
+
+        // All active/upcoming occupations for calendar
+        const allActiveOccupations = await Occupation.find({
+            endDate: { $gte: now },
         })
             .populate("propertyId", "title")
             .sort({ startDate: 1 });
+
+        // Recent occupations
+        const recentOccupations = await Occupation.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate("propertyId", "title");
 
         // Devise
         const settings = await CompanySettings.findOne();
@@ -45,12 +59,13 @@ export async function GET() {
 
         return NextResponse.json({
             totalProperties,
-            totalReservations: totalReservationsCount,
-            totalRevenue,
-            totalClients,
-            recentReservations,
-            allActiveReservations,
-            devise
+            activeOccupations,
+            totalOccupations,
+            vacantProperties,
+            upcomingExpirations,
+            allActiveOccupations,
+            recentOccupations,
+            devise,
         });
     } catch (error) {
         return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

@@ -13,25 +13,36 @@ export const authOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                await dbConnect();
+                console.log("[AUTH] Début tentative de connexion:", credentials?.email);
+                try {
+                    await dbConnect();
+                    console.log("[AUTH] Connexion DB OK");
 
-                if (!credentials?.email || !credentials.password) {
-                    throw new Error("Veuillez fournir un email et un mot de passe.");
+                    if (!credentials?.email || !credentials.password) {
+                        console.warn("[AUTH] Email ou mot de passe manquant");
+                        throw new Error("Veuillez fournir un email et un mot de passe.");
+                    }
+
+                    const admin = await Admin.findOne({ email: credentials.email }).select("+password");
+                    console.log("[AUTH] Recherche Admin terminée, trouvé:", !!admin);
+
+                    if (!admin) {
+                        throw new Error("Identifiants incorrects.");
+                    }
+
+                    console.log("[AUTH] Comparaison mot de passe...");
+                    const isMatch = await bcrypt.compare(credentials.password, admin.password);
+                    console.log("[AUTH] Match mot de passe:", isMatch);
+
+                    if (!isMatch) {
+                        throw new Error("Mot de passe incorrect.");
+                    }
+
+                    return { id: admin._id.toString(), email: admin.email, role: "admin" };
+                } catch (error: any) {
+                    console.error("[AUTH] Erreur critique pendant l'autorisation:", error.message);
+                    throw error;
                 }
-
-                const admin = await Admin.findOne({ email: credentials.email }).select("+password");
-
-                if (!admin) {
-                    throw new Error("Identifiants incorrects.");
-                }
-
-                const isMatch = await bcrypt.compare(credentials.password, admin.password);
-
-                if (!isMatch) {
-                    throw new Error("Mot de passe incorrect.");
-                }
-
-                return { id: admin._id.toString(), email: admin.email, role: "admin" };
             },
         }),
     ],
@@ -56,7 +67,6 @@ export const authOptions = {
     },
     session: {
         strategy: "jwt" as const,
-        maxAge: 6 * 60 * 60, // 6 hours
     },
     secret: process.env.NEXTAUTH_SECRET,
 };

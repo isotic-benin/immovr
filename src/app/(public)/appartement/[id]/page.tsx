@@ -2,17 +2,17 @@
 
 import { useState, useEffect, use } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 const PanoramaViewer = dynamic(() => import("@/components/PanoramaViewer"), { ssr: false });
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import {
-    MapPin, Star, Mail, Phone, Calendar as CalendarIcon, CheckCircle2,
-    Image as ImageIcon, ChevronLeft, ChevronRight, Send, Loader2, ThumbsUp, Eye, X
+    MapPin, Star, CheckCircle2,
+    Image as ImageIcon, ChevronLeft, ChevronRight, Send, Loader2
 } from "lucide-react";
 
 export default function PropertyDetails({ params }: { params: Promise<{ id: string }> }) {
@@ -21,11 +21,13 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
     const [settings, setSettings] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activePanorama, setActivePanorama] = useState(0);
-    const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-    const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-    const [bookingLoading, setBookingLoading] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Similar properties state
+    const [similarProperties, setSimilarProperties] = useState<any[]>([]);
+    const [similarPage, setSimilarPage] = useState(1);
+    const SIMILAR_PER_PAGE = 4;
 
     // Reviews state
     const [reviews, setReviews] = useState<any[]>([]);
@@ -34,25 +36,23 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
     const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
     const [reviewForm, setReviewForm] = useState({ guestName: "", guestEmail: "", rating: 5, comment: "" });
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
-    const [likedReviews, setLikedReviews] = useState<string[]>([]);
 
     useEffect(() => {
-        const savedLikes = localStorage.getItem("immovr_liked_reviews");
-        if (savedLikes) {
-            setLikedReviews(JSON.parse(savedLikes));
-        }
-    }, []);
-
-    useEffect(() => {
-        fetch(`/api/properties/${resolvedParams.id}`)
-            .then(res => res.json())
-            .then(data => { setProperty(data); setLoading(false); })
-            .catch(() => setLoading(false));
-
-        fetch("/api/admin/settings")
-            .then(res => res.json())
-            .then(data => setSettings(data))
-            .catch(() => { });
+        Promise.all([
+            fetch(`/api/properties/${resolvedParams.id}`).then(res => res.json()),
+            fetch("/api/admin/settings").then(res => res.json())
+        ]).then(([propData, settData]) => {
+            setProperty(propData);
+            setSettings(settData);
+            if (propData?.category) {
+                fetch(`/api/properties?category=${encodeURIComponent(propData.category)}&limit=20`)
+                    .then(res => res.json())
+                    .then(simData => {
+                        if (simData.properties) setSimilarProperties(simData.properties.filter((p: any) => p._id !== resolvedParams.id));
+                    }).catch(() => { });
+            }
+            setLoading(false);
+        }).catch(() => setLoading(false));
     }, [resolvedParams.id]);
 
     useEffect(() => {
@@ -68,34 +68,9 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
         }
     }, [resolvedParams.id, reviewsPage]);
 
-    // Calculate number of days and total
-    const numberOfDays = startDate && endDate
-        ? Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
-        : 0;
-
-    // Dynamic price calculation
-    let totalPrice = 0;
-    let calculationText = "";
-    const pPrice = property?.price || property?.pricePerHour || 0;
-    const pPeriod = property?.pricingPeriod || "heure";
-
-    if (pPeriod === "heure") {
-        totalPrice = pPrice * (numberOfDays * 24);
-        calculationText = `${numberOfDays}j × 24h × ${pPrice}`;
-    } else if (pPeriod === "jour") {
-        totalPrice = pPrice * numberOfDays;
-        calculationText = `${numberOfDays}j × ${pPrice}`;
-    } else if (pPeriod === "semaine") {
-        const weeks = Math.ceil(numberOfDays / 7);
-        totalPrice = pPrice * weeks;
-        calculationText = `${weeks} sem. × ${pPrice}`;
-    } else if (pPeriod === "mois") {
-        const months = Math.ceil(numberOfDays / 30);
-        totalPrice = pPrice * months;
-        calculationText = `${months} mois × ${pPrice}`;
-    }
-
     const devise = settings?.devise || "FCFA";
+    const totalSimilarPages = Math.ceil(similarProperties.length / SIMILAR_PER_PAGE);
+    const paginatedSimilar = similarProperties.slice((similarPage - 1) * SIMILAR_PER_PAGE, similarPage * SIMILAR_PER_PAGE);
 
     const handleReviewSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,91 +106,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
         }
     };
 
-    const handleLike = async (reviewId: string) => {
-        const isLiked = likedReviews.includes(reviewId);
-        const action = isLiked ? "unlike" : "like";
 
-        try {
-            const res = await fetch(`/api/reviews/${reviewId}/like`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action }),
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setReviews(prev => prev.map(r =>
-                    r._id === reviewId ? { ...r, likes: data.likes } : r
-                ));
-
-                const newLikedReviews = isLiked
-                    ? likedReviews.filter(id => id !== reviewId)
-                    : [...likedReviews, reviewId];
-
-                setLikedReviews(newLikedReviews);
-                localStorage.setItem("immovr_liked_reviews", JSON.stringify(newLikedReviews));
-
-                if (!isLiked) toast.success("Vous avez aimé cet avis !");
-            }
-        } catch (error) {
-            console.error("Like error:", error);
-        }
-    };
-
-    const handleBookingSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!startDate || !endDate) {
-            toast.error("Veuillez sélectionner une date d'arrivée et une date de départ.");
-            return;
-        }
-        if (endDate <= startDate) {
-            toast.error("La date de départ doit être après la date d'arrivée.");
-            return;
-        }
-
-        setBookingLoading(true);
-        const formData = new FormData(e.target as HTMLFormElement);
-
-        try {
-            const res = await fetch("/api/bookings", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    propertyId: resolvedParams.id,
-                    guestDetails: {
-                        firstName: formData.get("firstName"),
-                        lastName: formData.get("lastName"),
-                        email: formData.get("email"),
-                        phone: formData.get("phone"),
-                    },
-                    startDate: startDate.toISOString(),
-                    endDate: endDate.toISOString(),
-                    totalPrice,
-                }),
-            });
-            const data = await res.json();
-            if (res.ok && data.paymentUrl) {
-                window.location.href = data.paymentUrl;
-            } else {
-                toast.error(data.error || "Erreur lors de la réservation");
-            }
-        } catch {
-            toast.error("Erreur technique");
-        } finally {
-            setBookingLoading(false);
-        }
-    };
-
-    const nextImage = () => {
-        if (!property?.regularImageUrls) return;
-        setCurrentImageIndex((prev) => (prev + 1) % property.regularImageUrls.length);
-    };
-
-    const prevImage = () => {
-        if (!property?.regularImageUrls) return;
-        setCurrentImageIndex((prev) => (prev - 1 + property.regularImageUrls.length) % property.regularImageUrls.length);
-    };
 
     if (loading) {
         return (
@@ -239,73 +130,68 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
     const regularImages = property.regularImageUrls || [];
 
     return (
-        <div className="container mx-auto px-4 pt-32 md:pt-40 pb-20 min-h-screen">
+        <div className="container mx-auto px-4 pt-28 pb-8">
             <Toaster />
             {/* Property Header */}
-            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/50 p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none"></div>
-                <div className="relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3 tracking-tight">{property.title}</h1>
-                    <div className="flex items-center gap-5 text-slate-500 font-medium flex-wrap">
-                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full text-slate-700"><MapPin size={16} className="text-primary" /> {property.location?.quartier}, {property.location?.commune}</span>
-                        <span className="flex items-center gap-1.5"><Star size={18} className="text-yellow-400 fill-yellow-400" /> <span className="font-bold text-slate-700">{property.averageRating || 0}</span> ({property.totalReviews || 0} avis)</span>
+            <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-2">{property.title}</h1>
+                    <div className="flex items-center gap-4 text-slate-500 font-medium flex-wrap">
+                        <span className="flex items-center gap-1.5"><MapPin size={18} className="text-primary" /> {property.location?.quartier}, {property.location?.commune}</span>
+                        <span className="flex items-center gap-1.5"><Star size={18} className="text-yellow-400 fill-yellow-400" /> {property.averageRating || 0} ({property.totalReviews || 0} avis)</span>
                         {property.mapUrl && (
-                            <a href={property.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-500 hover:text-blue-600 transition-colors bg-blue-50 px-3 py-1 rounded-full">
-                                <MapPin size={16} /> Voir sur la carte
+                            <a href={property.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-500 hover:underline">
+                                <MapPin size={18} /> Voir sur la carte
                             </a>
                         )}
 
                     </div>
                 </div>
-                <div className="text-right relative z-10 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl shadow-slate-900/20">
-                    <p className="text-3xl font-black">{property.price || property.pricePerHour} {devise} <span className="text-sm text-slate-400 font-medium">/ {property.pricingPeriod || 'heure'}</span></p>
+                <div className="text-right">
+                    <p className="text-3xl font-bold text-primary">{property.price} {devise} <span className="text-base text-slate-500 font-normal">/ {property.pricingPeriod || 'heure'}</span></p>
                 </div>
             </div>
 
-            {/* VR Viewer (Cinematic) */}
+            {/* VR Viewer */}
             {panoramas.length > 0 ? (
-                <div className="mb-14 relative group">
-                    {/* Glowing backlight */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-
-                    <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-slate-950 p-2 md:p-3">
-                        <div className="rounded-2xl overflow-hidden border border-white/10">
-                            <PanoramaViewer imageUrl={panoramas[activePanorama]} height="650px" />
-                        </div>
+                <div className="mb-12">
+                    <div className="w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+                        <PanoramaViewer imageUrl={panoramas[activePanorama]} height="600px" />
                     </div>
-
                     {panoramas.length > 1 && (
-                        <div className="flex justify-center gap-3 mt-6 overflow-x-auto pb-2 px-2">
+                        <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
                             {panoramas.map((url: string, idx: number) => (
                                 <button key={idx} onClick={() => setActivePanorama(idx)}
-                                    className={`relative w-28 h-20 rounded-xl overflow-hidden shrink-0 transition-all duration-300 ${idx === activePanorama ? "ring-4 ring-primary ring-offset-2 scale-110 shadow-xl z-10" : "ring-1 ring-slate-200 opacity-60 hover:opacity-100 hover:scale-105"}`}>
-                                    <img src={url} alt={`Vue ${idx + 1}`} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                                    <span className="absolute bottom-1 right-2 text-white font-bold text-xs drop-shadow-md">{idx + 1}/{panoramas.length}</span>
+                                    className={`relative w-24 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${idx === activePanorama ? "border-primary shadow-lg scale-105" : "border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100"}`}>
+                                    <img src={url} alt={`Vue 360° #${idx + 1}`} className="w-full h-full object-cover" />
+                                    <span className="absolute bottom-0.5 left-1 bg-black/60 text-white text-[9px] px-1 rounded">#{idx + 1}</span>
                                 </button>
                             ))}
                         </div>
                     )}
-
                     {regularImages.length > 0 && (
-                        <div className="flex justify-center mt-6">
-                            <Button
-                                onClick={() => { setCurrentImageIndex(0); setIsImageModalOpen(true); }}
-                                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2.5 backdrop-blur-md transition-all flex items-center gap-2 group shadow-lg"
-                            >
-                                <Eye size={18} className="group-hover:scale-110 transition-transform" />
-                                <span className="font-semibold">Voir les {regularImages.length} photos standards</span>
-                            </Button>
-                        </div>
+                        <button onClick={() => { setCurrentImageIndex(0); setIsImageModalOpen(true); }}
+                            className="mt-4 flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                            <ImageIcon size={16} /> Voir les photos ({regularImages.length})
+                        </button>
                     )}
                 </div>
+            ) : regularImages.length > 0 ? (
+                <div 
+                    onClick={() => { setCurrentImageIndex(0); setIsImageModalOpen(true); }}
+                    className="mb-12 relative w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl border-4 border-white cursor-pointer group"
+                >
+                    <img src={regularImages[0]} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500" />
+                    <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-white/95 hover:bg-white text-slate-800 px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all transform group-hover:-translate-y-1">
+                        <ImageIcon size={18} /> Voir toutes les photos ({regularImages.length})
+                    </div>
+                </div>
             ) : (
-                <div className="w-full h-[500px] rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-14 shadow-inner">
+                <div className="w-full h-[400px] rounded-2xl bg-slate-100 flex items-center justify-center mb-12 border-2 border-dashed border-slate-200">
                     <div className="text-center text-slate-400">
-                        <div className="bg-white p-6 rounded-full inline-block mb-4 shadow-sm">
-                            <ImageIcon size={48} className="text-slate-300" />
-                        </div>
-                        <p className="font-medium text-lg">Aucune visite 360° disponible</p>
+                        <ImageIcon size={48} className="mx-auto mb-2 opacity-50" />
+                        <p className="font-medium">Aucune image disponible</p>
                     </div>
                 </div>
             )}
@@ -358,19 +244,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                                                 ))}
                                             </div>
                                         </div>
-                                        <p className="text-slate-600 mb-4">&quot;{review.comment}&quot;</p>
-                                        <div className="flex items-center justify-end">
-                                            <button
-                                                onClick={() => handleLike(review._id)}
-                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-300 ${likedReviews.includes(review._id)
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-                                                    }`}
-                                            >
-                                                <ThumbsUp size={16} className={likedReviews.includes(review._id) ? "fill-primary" : ""} />
-                                                <span className="text-sm font-bold">{review.likes || 0}</span>
-                                            </button>
-                                        </div>
+                                        <p className="text-slate-600">&quot;{review.comment}&quot;</p>
                                     </div>
                                 ))}
                                 {reviewsTotalPages > 1 && (
@@ -426,93 +300,51 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                     </section>
                 </div>
 
-                {/* Right Col: Booking Widget */}
+                {/* Right Col: Similar Properties */}
                 <div>
-                    <div className="sticky top-28 before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/80 before:to-white/40 before:backdrop-blur-xl before:rounded-[2rem] before:-z-10 shadow-2xl shadow-slate-200/50 border border-white p-8 rounded-[2rem] relative z-0">
-                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-[20px] -z-10"></div>
+                    <div className="sticky top-24 glass rounded-3xl p-6 shadow-2xl">
+                        <h3 className="text-2xl font-bold mb-6">Biens similaires</h3>
 
-                        <h3 className="text-2xl font-bold mb-6 text-slate-900 border-b border-slate-100 pb-4">Réserver votre créneau</h3>
-
-                        <form onSubmit={handleBookingSubmit} className="space-y-6">
-                            {/* Date d'arrivée */}
-                            <div className="space-y-2">
-                                <Label className="flex items-center gap-2 text-slate-700 font-semibold"><CalendarIcon size={16} className="text-primary" /> Date d&apos;arrivée</Label>
-                                <div className="border border-slate-200/60 rounded-2xl p-2 bg-white/70 flex justify-center shadow-inner mt-2 transition-all hover:bg-white focus-within:ring-2 focus-within:ring-primary/20">
-                                    <Calendar mode="single" selected={startDate} onSelect={(d) => { setStartDate(d); if (endDate && d && endDate <= d) setEndDate(undefined); }}
-                                        className="rounded-xl border-none" disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))} />
+                        {similarProperties.length === 0 ? (
+                            <p className="text-slate-400 italic text-sm">Aucun bien similaire trouvé.</p>
+                        ) : (
+                            <>
+                                <div className="space-y-4">
+                                    {paginatedSimilar.map((prop: any) => (
+                                        <Link href={`/appartement/${prop._id}`} key={prop._id} className="block group">
+                                            <div className="flex gap-3 p-3 rounded-xl border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all bg-white">
+                                                <div className="w-24 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                                                    {(prop.regularImageUrls?.[0] || prop.panoramaImageUrls?.[0]) ? (
+                                                        <img src={prop.regularImageUrls?.[0] || prop.panoramaImageUrls?.[0]} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon size={20} /></div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-sm text-slate-800 truncate group-hover:text-primary transition-colors">{prop.title}</h4>
+                                                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-1"><MapPin size={11} /> {prop.location?.quartier}, {prop.location?.commune}</p>
+                                                    <p className="text-sm font-bold text-primary mt-1">{prop.price} {devise}<span className="text-xs text-slate-400 font-normal"> / {prop.pricingPeriod || 'heure'}</span></p>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
                                 </div>
-                                {startDate && (
-                                    <p className="text-sm text-primary font-bold bg-primary/5 px-3 py-2 rounded-lg mt-2 inline-block">📅 Arrivée : {startDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
-                                )}
-                            </div>
 
-                            {/* Date de départ */}
-                            <div className="space-y-2">
-                                <Label className="flex items-center gap-2 text-slate-700 font-semibold"><CalendarIcon size={16} className="text-secondary" /> Date de départ</Label>
-                                <div className="border border-slate-200/60 rounded-2xl p-2 bg-white/70 flex justify-center shadow-inner mt-2 transition-all hover:bg-white focus-within:ring-2 focus-within:ring-secondary/20">
-                                    <Calendar mode="single" selected={endDate} onSelect={setEndDate}
-                                        className="rounded-xl border-none" disabled={(d) => !startDate || d <= startDate} />
-                                </div>
-                                {endDate && (
-                                    <p className="text-sm text-secondary font-bold bg-secondary/5 px-3 py-2 rounded-lg mt-2 inline-block">📅 Départ : {endDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
-                                )}
-                            </div>
-
-                            {/* Durée résumé */}
-                            {numberOfDays > 0 && (
-                                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-4 text-center border border-white/50 shadow-sm animate-fade-in-up">
-                                    <p className="text-slate-700 font-medium">Durée du séjour : <span className="font-black text-xl text-primary block mt-1">{numberOfDays} jour{numberOfDays > 1 ? "s" : ""}</span></p>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                                <div className="space-y-2">
-                                    <Label htmlFor="firstName" className="font-medium text-slate-700">Prénom</Label>
-                                    <Input id="firstName" name="firstName" placeholder="Jean" required className="bg-white/60 border-slate-200 focus-visible:ring-primary h-12 rounded-xl" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="lastName" className="font-medium text-slate-700">Nom</Label>
-                                    <Input id="lastName" name="lastName" placeholder="Dupont" required className="bg-white/60 border-slate-200 focus-visible:ring-primary h-12 rounded-xl" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="flex items-center gap-2 font-medium text-slate-700"><Mail size={16} className="text-slate-400" /> Email</Label>
-                                <Input id="email" name="email" type="email" placeholder="jean.dupont@email.com" required className="bg-white/60 border-slate-200 focus-visible:ring-primary h-12 rounded-xl" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="phone" className="flex items-center gap-2 font-medium text-slate-700"><Phone size={16} className="text-slate-400" /> Téléphone</Label>
-                                <Input id="phone" name="phone" type="tel" placeholder="+225 01 02 03 04" required className="bg-white/60 border-slate-200 focus-visible:ring-primary h-12 rounded-xl" />
-                            </div>
-
-                            <div className="pt-6 mt-6 border-t border-slate-200">
-                                {numberOfDays > 0 ? (
-                                    <>
-                                        <div className="flex justify-between mb-3 text-slate-600 font-medium bg-slate-50 p-3 rounded-lg">
-                                            <span>{calculationText} {devise}/{pPeriod}</span>
-                                            <span className="text-slate-900">{totalPrice.toLocaleString()} {devise}</span>
+                                {totalSimilarPages > 1 && (
+                                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                                        <span className="text-xs text-slate-500">{similarPage}/{totalSimilarPages}</span>
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" size="sm" disabled={similarPage === 1} onClick={() => setSimilarPage(p => p - 1)}>
+                                                <ChevronLeft size={14} />
+                                            </Button>
+                                            <Button variant="outline" size="sm" disabled={similarPage === totalSimilarPages} onClick={() => setSimilarPage(p => p + 1)}>
+                                                <ChevronRight size={14} />
+                                            </Button>
                                         </div>
-                                        <div className="flex justify-between items-end mb-6">
-                                            <span className="text-slate-500 font-bold uppercase tracking-wider text-sm">Total à payer</span>
-                                            <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{totalPrice.toLocaleString()} <span className="text-2xl">{devise}</span></span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl mb-6 flex items-start gap-3">
-                                        <div className="text-yellow-500 mt-0.5">⚠️</div>
-                                        <p className="text-sm text-slate-500 leading-tight">Veuillez sélectionner vos dates d&apos;arrivée et de départ pour calculer le montant total de votre séjour.</p>
                                     </div>
                                 )}
-
-                                <Button type="submit" size="lg" className="w-full rounded-2xl text-lg h-16 shadow-xl shadow-primary/30 gap-2 bg-gradient-to-r from-primary to-secondary hover:scale-[1.02] transition-all duration-300 border-0" disabled={bookingLoading || numberOfDays === 0}>
-                                    {bookingLoading ? <><Loader2 size={24} className="animate-spin" /> Traitement en cours...</> : `Procéder au paiement sécurisé`}
-                                </Button>
-                                <p className="text-center text-sm font-medium text-slate-500 mt-4 flex items-center justify-center gap-2">
-                                    <CheckCircle2 size={16} className="text-green-500" /> Paiement chiffré et sécurisé via FedaPay
-                                </p>
-                            </div>
-                        </form>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -532,60 +364,27 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                     <span className="text-sm font-bold hidden sm:inline">Discuter sur WhatsApp</span>
                 </a>
             )}
-
-            {/* Standard Images Fullscreen Modal */}
+            {/* Image Modal */}
             {isImageModalOpen && regularImages.length > 0 && (
-                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
-                    <button
-                        onClick={() => setIsImageModalOpen(false)}
-                        className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2 bg-white/10 rounded-full hover:bg-white/20"
-                    >
-                        <X size={24} />
-                    </button>
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center" onClick={() => setIsImageModalOpen(false)}>
+                    <button onClick={() => setIsImageModalOpen(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-3xl font-bold z-10">&times;</button>
+                    <div className="absolute top-4 left-4 text-white/60 font-semibold bg-white/10 px-4 py-1.5 rounded-full text-sm">{currentImageIndex + 1} / {regularImages.length}</div>
 
-                    <div className="absolute top-6 left-6 text-white/70 font-medium bg-black/50 px-4 py-1.5 rounded-full text-sm">
-                        {currentImageIndex + 1} / {regularImages.length}
-                    </div>
-
-                    <div className="relative w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center p-4">
-                        <img
-                            src={regularImages[currentImageIndex]}
-                            alt={`Photo ${currentImageIndex + 1}`}
-                            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-300"
-                        />
-
+                    <div className="relative w-full h-full max-w-5xl max-h-[80vh] flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+                        <img src={regularImages[currentImageIndex]} alt={`Photo ${currentImageIndex + 1}`} className="max-w-full max-h-full object-contain rounded-lg" />
                         {regularImages.length > 1 && (
                             <>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                    className="absolute left-4 md:left-10 text-white/70 hover:text-white transition-colors p-3 bg-black/50 hover:bg-black/80 rounded-full"
-                                >
-                                    <ChevronLeft size={32} />
+                                <button onClick={() => setCurrentImageIndex(prev => (prev - 1 + regularImages.length) % regularImages.length)}
+                                    className="absolute left-2 md:left-6 text-white/60 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all">
+                                    <ChevronLeft size={24} />
                                 </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                    className="absolute right-4 md:right-10 text-white/70 hover:text-white transition-colors p-3 bg-black/50 hover:bg-black/80 rounded-full"
-                                >
-                                    <ChevronRight size={32} />
+                                <button onClick={() => setCurrentImageIndex(prev => (prev + 1) % regularImages.length)}
+                                    className="absolute right-2 md:right-6 text-white/60 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all">
+                                    <ChevronRight size={24} />
                                 </button>
                             </>
                         )}
                     </div>
-
-                    {/* Thumbnail navigation for modal */}
-                    {regularImages.length > 1 && (
-                        <div className="absolute bottom-6 max-w-4xl w-full px-4 flex gap-2 overflow-x-auto justify-center">
-                            {regularImages.map((url: string, idx: number) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setCurrentImageIndex(idx)}
-                                    className={`relative w-16 h-12 rounded-lg overflow-hidden shrink-0 transition-all ${idx === currentImageIndex ? 'ring-2 ring-white scale-110' : 'opacity-40 hover:opacity-100'}`}
-                                >
-                                    <img src={url} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
             )}
         </div>

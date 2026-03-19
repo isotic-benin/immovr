@@ -3,161 +3,146 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Home, Calendar, FileText, ChevronRight, AlertCircle, ImageIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, MapPin, Building, Calendar, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-function SearchResults() {
+function SearchResultsContent() {
     const searchParams = useSearchParams();
-    const q = searchParams.get("q") || "";
-
-    const [loading, setLoading] = useState(true);
+    const initialQuery = searchParams.get("q") || "";
+    
+    const [query, setQuery] = useState(initialQuery);
+    const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<{
         properties: any[];
-        reservations: any[];
-        invoices: any[];
-    }>({ properties: [], reservations: [], invoices: [] });
-    const [error, setError] = useState<string | null>(null);
+        occupations: any[];
+    }>({ properties: [], occupations: [] });
 
     useEffect(() => {
-        if (!q.trim()) {
-            setResults({ properties: [], reservations: [], invoices: [] });
-            setLoading(false);
-            return;
+        if (query.length >= 2) {
+            const timer = setTimeout(() => {
+                performSearch(query);
+            }, 300);
+            return () => clearTimeout(timer);
+        } else {
+            setResults({ properties: [], occupations: [] });
         }
+    }, [query]);
 
+    const performSearch = async (searchQuery: string) => {
         setLoading(true);
-        fetch(`/api/admin/search?q=${encodeURIComponent(q)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) throw new Error(data.error);
+        try {
+            const res = await fetch(`/api/admin/search?q=${encodeURIComponent(searchQuery)}`);
+            if (res.ok) {
+                const data = await res.json();
                 setResults({
                     properties: data.properties || [],
-                    reservations: data.reservations || [],
-                    invoices: data.invoices || []
+                    occupations: data.occupations || [],
                 });
-            })
-            .catch(err => setError(err.message))
-            .finally(() => setLoading(false));
-    }, [q]);
+            }
+        } catch (error) {
+            console.error("Search error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const totalResults = results.properties.length + results.reservations.length + results.invoices.length;
+    const totalResults = results.properties.length + results.occupations.length;
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                <div className="relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                        <Search className="text-primary" size={32} />
-                        Résultats de recherche
-                    </h1>
-                    <p className="text-slate-500 mt-2 text-lg">
-                        Pour la requête : <span className="font-bold text-slate-800">&quot;{q}&quot;</span>
-                    </p>
+        <div className="p-8">
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold text-slate-800 mb-2">Recherche Globale</h1>
+                <p className="text-slate-500">Recherchez parmi les biens et les occupations.</p>
+            </div>
+
+            <div className="max-w-3xl mb-10">
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <Input 
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Titre, locataire, commune, id..."
+                        className="pl-12 h-14 bg-white border-slate-200 text-lg rounded-2xl shadow-sm"
+                        autoFocus
+                    />
+                    {loading && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <Loader2 className="animate-spin text-primary" size={20} />
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {loading ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl shadow-sm border border-slate-100 min-h-[400px]">
-                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-                    <p className="text-slate-500 font-medium">Recherche en cours...</p>
+            {query.length >= 2 && !loading && totalResults === 0 && (
+                <div className="bg-white p-12 text-center rounded-3xl border border-slate-100 shadow-sm">
+                    <Search className="mx-auto text-slate-300 mb-4" size={48} />
+                    <h2 className="text-xl font-bold text-slate-700">Aucun résultat trouvé</h2>
+                    <p className="text-slate-500 mt-2">Nous n'avons rien trouvé pour "{query}". Essayez d'autres mots-clés.</p>
                 </div>
-            ) : error ? (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-6 flex items-center gap-3">
-                    <AlertCircle size={24} />
-                    <p className="font-semibold">{error}</p>
-                </div>
-            ) : totalResults === 0 ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center min-h-[400px] flex flex-col items-center justify-center">
-                    <Search size={48} className="text-slate-200 mb-4" />
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">Aucun résultat trouvé</h3>
-                    <p className="text-slate-500 max-w-sm mx-auto">
-                        Nous n&apos;avons trouvé aucun bien, aucune réservation ni aucune facture correspondant à <span className="font-bold">&quot;{q}&quot;</span>.
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-8">
+            )}
+
+            {totalResults > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
                     {/* Properties Results */}
                     {results.properties.length > 0 && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                                <Home className="text-primary" size={20} />
-                                <h2 className="font-bold text-lg text-slate-800">Biens Immobiliers ({results.properties.length})</h2>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-200">
+                                <Building className="text-primary" size={20} />
+                                <h2 className="font-bold text-lg text-slate-800">Biens ({results.properties.length})</h2>
                             </div>
-                            <div className="divide-y divide-slate-100">
-                                {results.properties.map((property) => (
-                                    <div key={property._id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-lg object-cover bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                {property.panoramaImageUrls?.[0] ? (
-                                                    <img src={property.panoramaImageUrls[0]} alt={property.title} className="w-full h-full object-cover" />
-                                                ) : <ImageIcon size={20} className="text-slate-400" />}
+                            
+                            {results.properties.map((prop) => (
+                                <div key={prop._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
+                                    <div className="flex items-start gap-4">
+                                        {prop.panoramaImageUrls?.[0] ? (
+                                            <img src={prop.panoramaImageUrls[0]} alt={prop.title} className="w-16 h-16 rounded-lg object-cover" />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center">
+                                                <Building className="text-slate-300" size={24} />
                                             </div>
-                                            <div>
-                                                <h3 className="font-bold text-slate-800 line-clamp-1">{property.title}</h3>
-                                                <p className="text-sm text-slate-500 line-clamp-1">
-                                                    {property.location?.quartier}, {property.location?.commune} • {property.price || property.pricePerHour} FCFA / {property.pricingPeriod || 'heure'}
-                                                </p>
+                                        )}
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-slate-800 line-clamp-1">{prop.title}</h3>
+                                            <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1">
+                                                <MapPin size={14} />
+                                                <span>{prop.location?.quartier}, {prop.location?.commune}</span>
                                             </div>
                                         </div>
-                                        <Link href={"/admin/properties"}>
-                                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">Gérer <ChevronRight size={16} /></Button>
+                                        <Link href={`/admin/properties`} className="shrink-0 text-sm font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20">
+                                            Gérer
                                         </Link>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
                     )}
 
-                    {/* Reservations Results */}
-                    {results.reservations.length > 0 && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                                <Calendar className="text-primary" size={20} />
-                                <h2 className="font-bold text-lg text-slate-800">Réservations ({results.reservations.length})</h2>
+                    {/* Occupations Results */}
+                    {results.occupations.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-200">
+                                <Calendar className="text-green-500" size={20} />
+                                <h2 className="font-bold text-lg text-slate-800">Occupations ({results.occupations.length})</h2>
                             </div>
-                            <div className="divide-y divide-slate-100">
-                                {results.reservations.map((res) => (
-                                    <div key={res._id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                            
+                            {results.occupations.map((occ) => (
+                                <div key={occ._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-green-500/30 hover:shadow-md transition-all">
+                                    <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <h3 className="font-bold text-slate-800">
-                                                {res.guestDetails?.firstName} {res.guestDetails?.lastName}
-                                            </h3>
-                                            <p className="text-sm text-slate-500">
-                                                Bien : {res.propertyId?.title || "N/A"} • Du {new Date(res.startDate).toLocaleDateString()} au {new Date(res.endDate).toLocaleDateString()}
-                                            </p>
+                                            <h3 className="font-bold text-slate-800">{occ.tenantName}</h3>
+                                            <p className="text-sm text-slate-500">{occ.propertyId?.title || "Bien supprimé"}</p>
                                         </div>
-                                        <Link href={"/admin/reservations"}>
-                                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">Voir <ChevronRight size={16} /></Button>
-                                        </Link>
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700`}>
+                                            Occupé
+                                        </span>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Invoices Results */}
-                    {results.invoices.length > 0 && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                                <FileText className="text-primary" size={20} />
-                                <h2 className="font-bold text-lg text-slate-800">Factures ({results.invoices.length})</h2>
-                            </div>
-                            <div className="divide-y divide-slate-100">
-                                {results.invoices.map((inv) => (
-                                    <div key={inv._id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                        <div>
-                                            <h3 className="font-bold text-slate-800">{inv.invoiceNumber}</h3>
-                                            <p className="text-sm text-slate-500">
-                                                Client : {inv.guestName} • Montant : {inv.totalAmount?.toLocaleString()} FCFA
-                                            </p>
-                                        </div>
-                                        <Link href={"/admin/invoices"}>
-                                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">Détails <ChevronRight size={16} /></Button>
-                                        </Link>
+                                    <div className="flex items-center gap-4 text-sm text-slate-500 mt-3 bg-slate-50 p-2 rounded-lg">
+                                        <div>Du {new Date(occ.startDate).toLocaleDateString("fr-FR")}</div>
+                                        <div>Au {new Date(occ.endDate).toLocaleDateString("fr-FR")}</div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -166,10 +151,10 @@ function SearchResults() {
     );
 }
 
-export default function AdminSearchPage() {
+export default function GlobalSearch() {
     return (
-        <Suspense fallback={<div className="p-12 text-center text-slate-500">Chargement de la page de recherche...</div>}>
-            <SearchResults />
-        </Suspense>
+       <Suspense fallback={<div className="p-8"><Loader2 className="animate-spin text-primary" size={32}/></div>}>
+           <SearchResultsContent />
+       </Suspense>
     );
 }

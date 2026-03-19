@@ -49,11 +49,13 @@ async function dbConnect() {
     if (!cached.promise) {
         const opts = {
             bufferCommands: false,
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 5000,
         };
 
         cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
-            // Check for default admin after successful connection
-            await initializeDefaultAdmin();
+            // Check for default admin after successful connection (non-blocking)
+            initializeDefaultAdmin().catch(e => console.error("Admin init error:", e));
             return mongoose;
         });
     }
