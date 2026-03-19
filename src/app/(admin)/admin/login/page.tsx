@@ -3,10 +3,11 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 
 export default function AdminLogin() {
     const router = useRouter();
@@ -106,6 +107,13 @@ export default function AdminLogin() {
                         {loading ? "Connexion..." : "Se connecter"}
                     </Button>
                 </form>
+
+                <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+                    <Link href="/" className="text-sm text-slate-500 hover:text-primary transition-colors flex items-center gap-2">
+                        <ArrowLeft size={16} />
+                        Retour au site web
+                    </Link>
+                </div>
             </div>
         </div>
     );
