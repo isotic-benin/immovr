@@ -397,6 +397,7 @@ export default function AdminProperties() {
                                             <SelectContent>
                                                 <SelectItem value="heure">/ heure</SelectItem>
                                                 <SelectItem value="jour">/ jour</SelectItem>
+                                                <SelectItem value="nuitée">/ nuitée</SelectItem>
                                                 <SelectItem value="semaine">/ semaine</SelectItem>
                                                 <SelectItem value="mois">/ mois</SelectItem>
                                             </SelectContent>
@@ -689,6 +690,7 @@ export default function AdminProperties() {
                                         <SelectContent>
                                             <SelectItem value="heure">/ heure</SelectItem>
                                             <SelectItem value="jour">/ jour</SelectItem>
+                                            <SelectItem value="nuitée">/ nuitée</SelectItem>
                                             <SelectItem value="semaine">/ semaine</SelectItem>
                                             <SelectItem value="mois">/ mois</SelectItem>
                                         </SelectContent>

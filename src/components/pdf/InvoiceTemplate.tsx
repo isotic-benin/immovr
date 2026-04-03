@@ -114,6 +114,9 @@ export const InvoiceTemplate = ({ invoiceNumber, date, client, property, booking
                         {amount.pricingPeriod === 'jour' && (
                             <Text style={styles.text}>{booking.days} jour{booking.days > 1 ? 's' : ''}</Text>
                         )}
+                        {amount.pricingPeriod === 'nuitée' && (
+                            <Text style={styles.text}>{Math.max(1, booking.days - 1)} nuitée{Math.max(1, booking.days - 1) > 1 ? 's' : ''}</Text>
+                        )}
                         {amount.pricingPeriod === 'semaine' && (
                             <Text style={styles.text}>{Math.ceil(booking.days / 7)} semaine{Math.ceil(booking.days / 7) > 1 ? 's' : ''}</Text>
                         )}

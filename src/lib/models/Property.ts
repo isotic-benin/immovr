@@ -30,7 +30,7 @@ const PropertySchema: Schema = new Schema(
             address: { type: String },
         },
         price: { type: Number, required: true },
-        pricingPeriod: { type: String, enum: ['heure', 'jour', 'semaine', 'mois'], default: 'heure' },
+        pricingPeriod: { type: String, enum: ['heure', 'jour', 'nuitée', 'semaine', 'mois'], default: 'heure' },
         panoramaImageUrls: { type: [String], default: [] },
         regularImageUrls: { type: [String], default: [] },
         isActive: { type: Boolean, default: true },
