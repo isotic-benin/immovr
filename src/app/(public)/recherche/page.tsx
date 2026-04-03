@@ -182,9 +182,9 @@ function SearchPropertiesContent() {
 
                                     <div className="relative h-56 overflow-hidden bg-slate-100 z-10 m-2 rounded-2xl">
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 opacity-60"></div>
-                                        {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
+                                        {(property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]) ? (
                                             <img
-                                                src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
+                                                src={property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
                                                 alt={property.title}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                                             />

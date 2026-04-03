@@ -12,6 +12,7 @@ export interface IProperty extends Document {
     pricingPeriod: string;
     panoramaImageUrls: string[];
     regularImageUrls: string[];
+    coverImageUrl?: string;
     isActive: boolean;
     mapUrl?: string; // New field for Google Maps link
     category?: string;
@@ -33,6 +34,7 @@ const PropertySchema: Schema = new Schema(
         pricingPeriod: { type: String, enum: ['heure', 'jour', 'nuitée', 'semaine', 'mois'], default: 'heure' },
         panoramaImageUrls: { type: [String], default: [] },
         regularImageUrls: { type: [String], default: [] },
+        coverImageUrl: { type: String, default: "" },
         isActive: { type: Boolean, default: true },
         mapUrl: { type: String, default: "" },
         category: { type: String, default: "" },

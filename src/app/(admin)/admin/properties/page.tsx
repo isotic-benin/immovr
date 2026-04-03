@@ -118,6 +118,7 @@ export default function AdminProperties() {
     });
     const [uploadedImages, setUploadedImages] = useState<string[]>([]);
     const [uploadedRegularImages, setUploadedRegularImages] = useState<string[]>([]);
+    const [selectedCoverImage, setSelectedCoverImage] = useState<string>("");
     const [uploadingRegular, setUploadingRegular] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -150,7 +151,11 @@ export default function AdminProperties() {
             }
 
             if (newUrls.length > 0) {
-                setUploadedImages(prev => [...prev, ...newUrls]);
+                setUploadedImages(prev => {
+                    const next = [...prev, ...newUrls];
+                    return next;
+                });
+                setSelectedCoverImage(prev => prev || newUrls[0]);
                 toast.success(`${newUrls.length} image(s) 360° uploadée(s)`);
             }
         } catch (error) {
@@ -188,7 +193,11 @@ export default function AdminProperties() {
             }
 
             if (newUrls.length > 0) {
-                setUploadedRegularImages(prev => [...prev, ...newUrls]);
+                setUploadedRegularImages(prev => {
+                    const next = [...prev, ...newUrls];
+                    return next;
+                });
+                setSelectedCoverImage(prev => prev || newUrls[0]);
                 toast.success(`${newUrls.length} photo(s) standard uploadée(s)`);
             }
         } catch (error) {
@@ -201,17 +210,32 @@ export default function AdminProperties() {
     };
 
     const removeImage = (index: number) => {
-        setUploadedImages(prev => prev.filter((_, i) => i !== index));
+        setUploadedImages(prev => {
+            const newList = prev.filter((_, i) => i !== index);
+            if (selectedCoverImage && selectedCoverImage === prev[index]) {
+                const fallback = newList[0] || uploadedRegularImages[0] || "";
+                setSelectedCoverImage(fallback);
+            }
+            return newList;
+        });
     };
 
     const removeRegularImage = (index: number) => {
-        setUploadedRegularImages(prev => prev.filter((_, i) => i !== index));
+        setUploadedRegularImages(prev => {
+            const newList = prev.filter((_, i) => i !== index);
+            if (selectedCoverImage && selectedCoverImage === prev[index]) {
+                const fallback = uploadedImages[0] || newList[0] || "";
+                setSelectedCoverImage(fallback);
+            }
+            return newList;
+        });
     };
 
     const resetForm = () => {
         setFormData({ title: "", description: "", category: "", price: 0, pricingPeriod: "heure", commune: "", quartier: "", features: "", mapUrl: "" });
         setUploadedImages([]);
         setUploadedRegularImages([]);
+        setSelectedCoverImage("");
         setIsAddingNewCategory(false);
     };
 
@@ -221,6 +245,8 @@ export default function AdminProperties() {
             toast.error("Veuillez ajouter au moins une image (360° ou standard)");
             return;
         }
+
+        const normalizedCoverImage = selectedCoverImage || uploadedRegularImages[0] || uploadedImages[0] || "";
 
         const payload = {
             title: formData.title,
@@ -233,6 +259,7 @@ export default function AdminProperties() {
             mapUrl: formData.mapUrl,
             panoramaImageUrls: uploadedImages,
             regularImageUrls: uploadedRegularImages,
+            coverImageUrl: normalizedCoverImage,
         };
 
         console.log("POST Property Payload:", payload);
@@ -274,6 +301,7 @@ export default function AdminProperties() {
         });
         setUploadedImages(property.panoramaImageUrls || []);
         setUploadedRegularImages(property.regularImageUrls || []);
+        setSelectedCoverImage(property.coverImageUrl || property.regularImageUrls?.[0] || property.panoramaImageUrls?.[0] || "");
         setIsAddingNewCategory(false);
         setIsEditOpen(true);
     };
@@ -286,6 +314,8 @@ export default function AdminProperties() {
             return;
         }
 
+        const normalizedCoverImage = selectedCoverImage || uploadedRegularImages[0] || uploadedImages[0] || "";
+
         const payload = {
             title: formData.title,
             description: formData.description,
@@ -297,6 +327,7 @@ export default function AdminProperties() {
             mapUrl: formData.mapUrl,
             panoramaImageUrls: uploadedImages,
             regularImageUrls: uploadedRegularImages,
+            coverImageUrl: normalizedCoverImage,
         };
 
         console.log("PUT Property Payload:", payload);
@@ -486,6 +517,11 @@ export default function AdminProperties() {
                             {/* Image Upload Section */}
                             <div className="space-y-3 bg-slate-50 rounded-xl p-4">
                                 <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement (Optionnel)</Label>
+                            {selectedCoverImage ? (
+                                <div className="text-xs text-emerald-700 font-medium">Image de couverture : <span className="underline break-words">{selectedCoverImage}</span></div>
+                            ) : (
+                                <div className="text-xs text-slate-500">Aucune image de couverture sélectionnée pour l'instant.</div>
+                            )}
 
                                 {/* Preview Grid */}
                                 {uploadedImages.length > 0 && (
@@ -500,7 +536,14 @@ export default function AdminProperties() {
                                                 >
                                                     <X size={12} />
                                                 </button>
-                                                <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedCoverImage(url)}
+                                                    className={`absolute top-1 left-1 text-xs px-2 py-1 rounded ${selectedCoverImage === url ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white'} hover:opacity-90`}
+                                                >
+                                                    {selectedCoverImage === url ? 'Couverture' : 'Définir couverture'}
+                                                </button>
+                                                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -579,8 +622,8 @@ export default function AdminProperties() {
                                         <TableRow key={property._id}>
                                             <TableCell>
                                                 <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
-                                                    {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
-                                                        <img src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]} alt="" className="w-full h-full object-cover" />
+                                                    {property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
+                                                        <img src={property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <ImageIcon size={20} className="text-slate-400" />
                                                     )}
@@ -779,6 +822,11 @@ export default function AdminProperties() {
                         {/* Image Upload Section */}
                         <div className="space-y-3 bg-slate-50 rounded-xl p-4">
                             <Label className="flex items-center gap-2"><ImageIcon size={16} /> Images 360° de l&apos;appartement (Optionnel)</Label>
+                            {selectedCoverImage ? (
+                                <div className="text-xs text-emerald-700 font-medium">Image de couverture : <span className="underline break-words">{selectedCoverImage}</span></div>
+                            ) : (
+                                <div className="text-xs text-slate-500">Aucune image de couverture sélectionnée pour l'instant.</div>
+                            )}
 
                             {/* Preview Grid */}
                             {uploadedImages.length > 0 && (
@@ -793,7 +841,14 @@ export default function AdminProperties() {
                                             >
                                                 <X size={12} />
                                             </button>
-                                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedCoverImage(url)}
+                                                className={`absolute top-1 left-1 text-xs px-2 py-1 rounded ${selectedCoverImage === url ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white'} hover:opacity-90`}
+                                            >
+                                                {selectedCoverImage === url ? 'Couverture' : 'Définir couverture'}
+                                            </button>
+                                            <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -824,6 +879,13 @@ export default function AdminProperties() {
                                                 className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 <X size={12} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedCoverImage(url)}
+                                                className={`absolute top-1 left-1 text-xs px-2 py-1 rounded ${selectedCoverImage === url ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white'} hover:opacity-90`}
+                                            >
+                                                {selectedCoverImage === url ? 'Couverture' : 'Définir couverture'}
                                             </button>
                                         </div>
                                     ))}

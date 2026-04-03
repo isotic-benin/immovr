@@ -176,9 +176,9 @@ export default function Home() {
                   <div className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-2 border-transparent hover:border-primary/20 flex flex-col h-full hover:-translate-y-2 relative">
                     <div className="relative h-64 overflow-hidden bg-slate-100 z-10 m-2 rounded-2xl">
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent z-10 opacity-60"></div>
-                      {property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0] ? (
+                      {(property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]) ? (
                         <img
-                          src={property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
+                          src={property.coverImageUrl || property.panoramaImageUrls?.[0] || property.regularImageUrls?.[0]}
                           alt={property.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         />
