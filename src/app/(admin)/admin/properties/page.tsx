@@ -136,7 +136,11 @@ export default function AdminProperties() {
                 let file = files[i];
                 // Compress 360° image (can be larger, so using higher maxWidth)
                 if (file.type.startsWith('image/')) {
-                    file = await compressImage(file, 4096, 0.85);
+                    const { file: processedFile, wasCompressed } = await compressImage(file, 4096, 0.85);
+                    file = processedFile;
+                    if (wasCompressed) {
+                        console.log(`360° image ${i + 1} compressée`);
+                    }
                 }
                 const blob = await upload(`immovr/biens/${Date.now()}-${file.name}`, file, {
                     access: 'public',
@@ -147,7 +151,7 @@ export default function AdminProperties() {
 
             if (newUrls.length > 0) {
                 setUploadedImages(prev => [...prev, ...newUrls]);
-                toast.success(`${newUrls.length} image(s) 360 uploadée(s)`);
+                toast.success(`${newUrls.length} image(s) 360° uploadée(s)`);
             }
         } catch (error) {
             console.error("360 upload error:", error);
@@ -170,7 +174,11 @@ export default function AdminProperties() {
                 let file = files[i];
                 // Compress standard image
                 if (file.type.startsWith('image/')) {
-                    file = await compressImage(file, 2048, 0.8);
+                    const { file: processedFile, wasCompressed } = await compressImage(file, 2048, 0.8);
+                    file = processedFile;
+                    if (wasCompressed) {
+                        console.log(`Image standard ${i + 1} compressée`);
+                    }
                 }
                 const blob = await upload(`immovr/biens_standards/${Date.now()}-${file.name}`, file, {
                     access: 'public',

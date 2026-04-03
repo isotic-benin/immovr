@@ -68,3 +68,68 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
+
+/* iOS/Mobile Optimizations for Modals */
+@media (max-width: 640px) {
+  /* Smooth scrolling on iOS */
+  [data-slot="dialog-content"],
+  dialog,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent zoom on input focus (iPhone) */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Prevent double tap zoom issues */
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Better spacing for mobile inputs & buttons */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    font-size: 16px;
+  }
+
+  /* Improve touch targets on mobile */
+  button,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Global dialog improvements for all devices */
+[data-slot="dialog-content"] {
+  /* Use dvh for better viewport handling on iOS */
+  max-height: 85dvh;
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Better rendering on iOS */
+  -webkit-transform: translateZ(0);
+}
+
+/* Header sticky positioning improvement */
+[data-slot="dialog-header"] {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Fix for iOS keyboard pushing content */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}

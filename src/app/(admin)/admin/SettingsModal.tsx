@@ -68,9 +68,14 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
         try {
             // Compresser l'image avant l'upload (max 800px pour un logo)
-            const compressedFile = await compressImage(file, 800, 0.82);
+            const { file: processedFile, wasCompressed, originalSize, finalSize } = await compressImage(file, 800, 0.82);
             
-            const newBlob = await upload(compressedFile.name, compressedFile, {
+            if (wasCompressed) {
+                const reductionPercent = (((originalSize - finalSize) / originalSize) * 100).toFixed(1);
+                toast.success(`Logo compressé: ${(originalSize / 1024).toFixed(2)}KB → ${(finalSize / 1024).toFixed(2)}KB (-${reductionPercent}%)`);
+            }
+
+            const newBlob = await upload(processedFile.name, processedFile, {
                 access: 'public',
                 handleUploadUrl: '/api/upload/blob',
             });
@@ -110,98 +115,105 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+            <DialogContent className="w-[95vw] sm:max-w-[540px] p-0 rounded-2xl overflow-hidden gap-0 flex flex-col">
+                <DialogHeader className="p-6 pb-3 sticky top-0 bg-background z-10 border-b">
                     <DialogTitle className="text-xl">Paramètres de l&apos;Entreprise</DialogTitle>
                 </DialogHeader>
 
                 {loading ? (
-                    <div className="py-8 text-center text-slate-500">Chargement...</div>
+                    <div className="py-12 text-center text-slate-500 flex-1">Chargement...</div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Logo Upload */}
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-3">
-                            <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider">Logo de l&apos;entreprise</h3>
-                            <div className="flex items-center gap-4">
-                                {logoPreview ? (
-                                    <div className="relative w-20 h-20 rounded-xl border-2 border-slate-200 overflow-hidden bg-white">
-                                        <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setLogoPreview(""); setForm(prev => ({ ...prev, logoUrl: "" })); }}
-                                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                                        >
-                                            <X size={12} />
-                                        </button>
+                    <>
+                        <form id="settings-form" onSubmit={handleSubmit} className="space-y-5 p-6 pb-4 overflow-y-auto flex-1">
+                            {/* Logo Upload */}
+                            <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                                <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider">Logo de l&apos;entreprise</h3>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    {logoPreview ? (
+                                        <div className="relative w-20 h-20 rounded-xl border-2 border-slate-200 overflow-hidden bg-white shrink-0">
+                                            <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                                            <button
+                                                type="button"
+                                                onClick={() => { setLogoPreview(""); setForm(prev => ({ ...prev, logoUrl: "" })); }}
+                                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 shrink-0">
+                                            <Upload size={24} />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 w-full">
+                                        <label className="cursor-pointer block">
+                                            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors w-full sm:w-auto justify-center sm:justify-start">
+                                                <Upload size={16} /> {uploading ? "Upload..." : "Choisir fichier"}
+                                            </span>
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploading} />
+                                        </label>
+                                        <p className="text-xs text-slate-400 mt-2">PNG, JPG. Max: 500x500px</p>
                                     </div>
-                                ) : (
-                                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400">
-                                        <Upload size={24} />
+                                </div>
+                            </div>
+
+                            {/* Company Info */}
+                            <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                                <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider">Informations Légales</h3>
+
+                                <div className="space-y-2">
+                                    <Label>Raison Sociale</Label>
+                                    <Input name="raisonSociale" value={form.raisonSociale} onChange={handleChange} placeholder="ImmoVR SARL" className="text-base" />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>RCCM</Label>
+                                        <Input name="rccm" value={form.rccm} onChange={handleChange} placeholder="CI-ABJ-2024-B-12345" />
                                     </div>
-                                )}
-                                <div className="flex-1">
-                                    <label className="cursor-pointer">
-                                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                            <Upload size={16} /> {uploading ? "Upload en cours..." : "Choisir un fichier"}
-                                        </span>
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploading} />
-                                    </label>
-                                    <p className="text-xs text-slate-400 mt-1">PNG, JPG. Taille max recommandée : 500x500px</p>
+                                    <div className="space-y-2">
+                                        <Label>IFU</Label>
+                                        <Input name="ifu" value={form.ifu} onChange={handleChange} placeholder="2024-12345-X" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Téléphone</Label>
+                                        <Input name="telephone" value={form.telephone} onChange={handleChange} placeholder="+225 07 01 02 03" type="tel" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>WhatsApp</Label>
+                                        <Input name="whatsappNumber" value={form.whatsappNumber} onChange={handleChange} placeholder="22507010203" type="tel" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input name="email" type="email" value={form.email} onChange={handleChange} placeholder="contact@immovr.ci" />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Localisation</Label>
+                                    <Input name="localisation" value={form.localisation} onChange={handleChange} placeholder="Abidjan, Cocody, Riviera 3" />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Devise</Label>
+                                    <Input name="devise" value={form.devise} onChange={handleChange} placeholder="FCFA" />
                                 </div>
                             </div>
+                        </form>
+
+                        <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent p-6 pt-4 border-t flex gap-2 flex-col-reverse sm:flex-row">
+                            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto rounded-lg border-slate-200">
+                                Annuler
+                            </Button>
+                            <Button type="submit" form="settings-form" disabled={saving} className="w-full sm:w-auto gap-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+                                <Save size={16} /> {saving ? "Enregistrement..." : "Enregistrer"}
+                            </Button>
                         </div>
-
-                        {/* Company Info */}
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-4">
-                            <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider">Informations Légales</h3>
-
-                            <div className="space-y-2">
-                                <Label>Raison Sociale</Label>
-                                <Input name="raisonSociale" value={form.raisonSociale} onChange={handleChange} placeholder="ImmoVR SARL" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>RCCM</Label>
-                                    <Input name="rccm" value={form.rccm} onChange={handleChange} placeholder="CI-ABJ-2024-B-12345" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>IFU</Label>
-                                    <Input name="ifu" value={form.ifu} onChange={handleChange} placeholder="2024-12345-X" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Téléphone</Label>
-                                    <Input name="telephone" value={form.telephone} onChange={handleChange} placeholder="+225 07 01 02 03" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>WhatsApp (Format Internat.)</Label>
-                                    <Input name="whatsappNumber" value={form.whatsappNumber} onChange={handleChange} placeholder="22507010203" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Email</Label>
-                                <Input name="email" type="email" value={form.email} onChange={handleChange} placeholder="contact@immovr.ci" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Localisation</Label>
-                                <Input name="localisation" value={form.localisation} onChange={handleChange} placeholder="Abidjan, Cocody, Riviera 3" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Devise</Label>
-                                <Input name="devise" value={form.devise} onChange={handleChange} placeholder="FCFA" />
-                            </div>
-                        </div>
-
-                        <Button type="submit" className="w-full gap-2" disabled={saving}>
-                            <Save size={16} /> {saving ? "Enregistrement..." : "Enregistrer les paramètres"}
-                        </Button>
-                    </form>
+                    </>
                 )}
             </DialogContent>
         </Dialog>

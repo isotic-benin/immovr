@@ -26,26 +26,26 @@ export default function ProfileModal({ open, onClose, adminEmail }: ProfileModal
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
+            <DialogContent className="w-[95vw] sm:max-w-md p-0 rounded-2xl overflow-hidden gap-0 flex flex-col max-h-[85dvh]">
+                <DialogHeader className="p-6 pb-3 sticky top-0 bg-background z-10 border-b">
                     <DialogTitle className="text-xl">Mon Profil</DialogTitle>
                 </DialogHeader>
 
                 {loading ? (
-                    <div className="py-8 text-center text-slate-500">Chargement...</div>
+                    <div className="py-12 text-center text-slate-500 flex-1">Chargement...</div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 p-6 overflow-y-auto flex-1">
                         {/* Admin Info */}
                         <div className="bg-gradient-to-r from-primary/10 to-blue-50 rounded-2xl p-5">
                             <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider mb-3">Administrateur</h3>
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xl font-black">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                <div className="w-14 h-14 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xl font-black shrink-0">
                                     {adminEmail?.charAt(0).toUpperCase() || "A"}
                                 </div>
-                                <div>
-                                    <p className="font-bold text-lg text-slate-800">{adminEmail?.split("@")[0]}</p>
-                                    <p className="text-sm text-slate-500 flex items-center gap-1.5"><Mail size={14} /> {adminEmail}</p>
-                                    <span className="mt-1 inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">Super Admin</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-lg text-slate-800 truncate">{adminEmail?.split("@")[0]}</p>
+                                    <p className="text-sm text-slate-500 flex items-center gap-1.5 mt-1"><Mail size={14} /> <span className="truncate">{adminEmail}</span></p>
+                                    <span className="mt-2 inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">Super Admin</span>
                                 </div>
                             </div>
                         </div>
@@ -54,7 +54,7 @@ export default function ProfileModal({ open, onClose, adminEmail }: ProfileModal
                         <div className="bg-slate-50 rounded-2xl p-5">
                             <h3 className="font-bold text-sm text-slate-500 uppercase tracking-wider mb-3">Informations de l&apos;Agence</h3>
                             {!settings?.raisonSociale ? (
-                                <p className="text-slate-400 text-sm italic">Aucune information d&apos;entreprise configurée. Rendez-vous dans Paramètres pour les ajouter.</p>
+                                <p className="text-slate-400 text-sm italic">Aucune information configurée. Allez aux Paramètres.</p>
                             ) : (
                                 <div className="space-y-3">
                                     <InfoRow icon={<Building size={16} />} label="Raison Sociale" value={settings.raisonSociale} />
@@ -68,7 +68,7 @@ export default function ProfileModal({ open, onClose, adminEmail }: ProfileModal
                                     {settings.logoUrl && (
                                         <div className="flex items-center gap-3 pt-2">
                                             <img src={settings.logoUrl} alt="Logo" className="w-12 h-12 rounded-xl object-contain border border-slate-200" />
-                                            <span className="text-sm text-slate-500">Logo de l&apos;entreprise</span>
+                                            <span className="text-sm text-slate-500">Logo</span>
                                         </div>
                                     )}
                                 </div>

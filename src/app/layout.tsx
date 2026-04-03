@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "ImmoVR | L'immobilier en Réalité Virtuelle",
@@ -16,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="scroll-smooth">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-slate-50 relative selection:bg-primary selection:text-white`}>
+      <body className="min-h-screen flex flex-col bg-slate-50 relative selection:bg-primary selection:text-white">
         {children}
       </body>
     </html>

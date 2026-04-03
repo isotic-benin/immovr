@@ -544,23 +544,23 @@ export default function EnhancedCalendar({ occupations: initialOccupations }: En
   /* ─── MODAL ─── */
   const renderModal = () => (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <DialogContent className="sm:max-w-[520px] max-h-[92vh] overflow-y-auto w-[95vw] rounded-2xl p-0 gap-0">
+      <DialogContent className="w-[95vw] sm:max-w-[520px] max-h-[85dvh] overflow-y-auto rounded-2xl p-0 gap-0 flex flex-col">
         {/* Modal header */}
-        <div className="p-6 pb-4 border-b border-slate-100">
+        <div className="p-6 pb-4 border-b border-slate-100 sticky top-0 bg-background z-10">
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               {isEditing ? <Edit className="h-4 w-4 text-primary" /> : <Sparkles className="h-4 w-4 text-primary" />}
             </div>
             <DialogTitle className="text-base font-bold text-slate-800">
-              {isEditing ? "Modifier l'occupation" : "Nouvelle occupation"}
+              {isEditing ? "Modifier occupation" : "Nouvelle occupation"}
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-slate-400 ml-11">
-            Assignez un locataire à un bien pour bloquer ses disponibilités.
+            Assignez un locataire pour bloquer les disponibilités.
           </DialogDescription>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
           {/* Property */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
