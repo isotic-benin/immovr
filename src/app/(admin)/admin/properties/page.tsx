@@ -841,13 +841,16 @@ export default function AdminProperties() {
                                             >
                                                 <X size={12} />
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedCoverImage(url)}
-                                                className={`absolute top-1 left-1 text-xs px-2 py-1 rounded ${selectedCoverImage === url ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white'} hover:opacity-90`}
-                                            >
-                                                {selectedCoverImage === url ? 'Couverture' : 'Définir couverture'}
-                                            </button>
+                                            <label className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white px-1.5 py-1 rounded cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="coverImage"
+                                                    checked={selectedCoverImage === url}
+                                                    onChange={() => setSelectedCoverImage(url)}
+                                                    className="w-3 h-3 accent-emerald-400"
+                                                />
+                                                <span className="text-[10px]">{selectedCoverImage === url ? 'Couverture' : 'Choisir'}</span>
+                                            </label>
                                             <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</span>
                                         </div>
                                     ))}
@@ -880,13 +883,16 @@ export default function AdminProperties() {
                                             >
                                                 <X size={12} />
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedCoverImage(url)}
-                                                className={`absolute top-1 left-1 text-xs px-2 py-1 rounded ${selectedCoverImage === url ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white'} hover:opacity-90`}
-                                            >
-                                                {selectedCoverImage === url ? 'Couverture' : 'Définir couverture'}
-                                            </button>
+                                            <label className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 text-white px-1.5 py-1 rounded cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="coverImage"
+                                                    checked={selectedCoverImage === url}
+                                                    onChange={() => setSelectedCoverImage(url)}
+                                                    className="w-3 h-3 accent-emerald-400"
+                                                />
+                                                <span className="text-[10px]">{selectedCoverImage === url ? 'Couverture' : 'Choisir'}</span>
+                                            </label>
                                         </div>
                                     ))}
                                 </div>
