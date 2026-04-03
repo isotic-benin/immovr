@@ -128,6 +128,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
 
     const panoramas = property.panoramaImageUrls || [];
     const regularImages = property.regularImageUrls || [];
+    const coverImage = property.coverImageUrl || "";
 
     return (
         <div className="container mx-auto px-4 pt-28 pb-8">
@@ -152,8 +153,30 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                 </div>
             </div>
 
-            {/* VR Viewer */}
-            {panoramas.length > 0 ? (
+            {/* VR Viewer or Cover Image */}
+            {coverImage ? (
+                <div className="mb-12 relative">
+                    <div className="w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+                        <img src={coverImage} alt={property.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/10" />
+                    </div>
+                    {(panoramas.length > 0 || regularImages.length > 0) && (
+                        <div className="absolute top-4 right-4">
+                            <span className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-600/90 text-white text-xs font-bold rounded-full">Image de couverture</span>
+                        </div>
+                    )}
+                    {panoramas.length > 0 && (
+                        <button onClick={() => setActivePanorama(0)} className="mt-3 flex items-center gap-2 text-primary font-semibold text-sm">
+                            <ImageIcon size={16} /> Voir la visite 360°
+                        </button>
+                    )}
+                    {regularImages.length > 0 && (
+                        <button onClick={() => { const i = regularImages.indexOf(coverImage); setCurrentImageIndex(i >= 0 ? i : 0); setIsImageModalOpen(true); }} className="mt-3 ml-4 flex items-center gap-2 text-primary font-semibold text-sm">
+                            <ImageIcon size={16} /> Voir toutes les photos ({regularImages.length})
+                        </button>
+                    )}
+                </div>
+            ) : panoramas.length > 0 ? (
                 <div className="mb-12">
                     <div className="w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
                         <PanoramaViewer imageUrl={panoramas[activePanorama]} height="600px" />
